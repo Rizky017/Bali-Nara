@@ -1,0 +1,9 @@
+ASSET NOTES — NARA Interactive 3D Incense Aroma Studio
+
+All aroma cut-outs are served locally from ./assets/aromas/. The viewer creates Three.js sprites for selected floral/fruity/woody/resin scent visuals and ingredient visuals in Polos mode. The main incense stick is a GLB mesh.
+
+pineapple.webp: primary whole pineapple cutout used as source thumbnail.
+pineapple-slices.webp: refreshed high-resolution transparent composition featuring a whole ripe pineapple with several freshly cut pineapple wedges; fruit pieces are individually alpha-masked, scaled and arranged for the animated Pineapple aroma sprite.
+rose-petal.webp: red floating petal cut-out derived from the previous rose concept visual.
+
+This asset set does not assert that each depicted item is present in the real formulation. Musk is shown as a soft pearl-like scent aura. Ingredient visual mode in Polos shows wood/resin/honey-like natural materials as illustrative visuals.

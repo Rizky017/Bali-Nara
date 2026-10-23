@@ -1,0 +1,262 @@
+/* NARA site-wide refinement layer — loaded last on public pages.
+   Brand typography: DM Serif Display for display headings, DM Sans for UI/body. */
+:root {
+  --nara-serif: "DM Serif Display", Georgia, serif;
+  --nara-sans: "DM Sans", Arial, sans-serif;
+  --nara-forest: #17281f;
+  --nara-forest-deep: #1e211d;
+  --nara-cream: #f5f1e8;
+  --nara-paper: #fbf9f3;
+  --nara-gold: #c6a66b;
+  --nara-ink: #263229;
+  --nara-muted: #70766d;
+  --nara-border: #e4dfd4;
+  --nara-content-width: 1320px;
+}
+
+html {
+  scroll-behavior: smooth;
+  scroll-padding-top: 100px;
+  text-size-adjust: 100%;
+  -webkit-text-size-adjust: 100%;
+}
+
+body,
+body :is(p, li, a, button, input, select, textarea, label, summary, small, span, time, blockquote, figcaption) {
+  font-family: var(--nara-sans) !important;
+}
+
+body :is(h1, h2, h3, h4, h5, h6),
+body :is(h1, h2, h3, h4, h5, h6) :is(span, em, strong, a),
+body :is(.logo-main, .footer-brand-name, .footer-logo .footer-brand-name) {
+  font-family: var(--nara-serif) !important;
+  font-weight: 400 !important;
+  text-wrap: pretty;
+}
+
+body {
+  overflow-x: clip;
+  overflow-wrap: break-word;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+}
+
+img, picture, video, canvas, svg, iframe {
+  max-width: 100%;
+}
+img { height: auto; }
+button, input, select, textarea { max-width: 100%; }
+button, a, summary { -webkit-tap-highlight-color: transparent; }
+:focus-visible { outline: 2px solid var(--nara-gold); outline-offset: 3px; }
+
+/* Shared content rhythm and width. */
+.container {
+  width: min(92%, var(--nara-content-width));
+  margin-inline: auto;
+}
+.section { padding-block: clamp(56px, 7vw, 100px); }
+body :is(h1, h2, h3, h4) { text-wrap: balance; }
+body :is(p, li) { line-height: 1.75; }
+body :is(button, .btn, .nav-quote, .px-button) { min-height: 44px; }
+
+/* Homepage: preserve the existing Bali hero image; tune only layout and product cards. */
+.home-page .hero {
+  background-position: center center;
+  background-repeat: no-repeat;
+  background-size: cover;
+}
+.home-page .hero-content { width: min(100%, 760px); }
+.home-page .hero h1 { line-height: 1.02; }
+.home-page .products-section .product-grid { align-items: stretch; }
+.home-page .product-card { min-width: 0; overflow: hidden; border-radius: 2px; }
+.home-page .product-image { width: 100%; overflow: hidden; aspect-ratio: 4 / 3; }
+.home-page .product-image img { display: block; width: 100%; height: 100%; object-fit: cover; object-position: center; }
+.home-page .product-info { min-width: 0; }
+.home-page .product-info h3 { line-height: 1.16; }
+.home-page .product-info p:not(.product-category) { line-height: 1.75; }
+
+/* All Products: keep the header in normal flow so the page title can never sit behind it. */
+body.px-catalog-page > .site-header {
+  position: relative !important;
+  inset: auto !important;
+  width: 100%;
+}
+body.px-catalog-page > main { padding-top: 0 !important; margin-top: 0 !important; }
+body.px-catalog-page .nara-products-hero { overflow: hidden; }
+body.px-catalog-page .nara-products-hero-inner {
+  min-height: 270px;
+  grid-template-columns: minmax(0, 1.15fr) minmax(280px, .85fr);
+  align-items: stretch;
+}
+body.px-catalog-page .nara-products-hero-copy {
+  min-width: 0;
+  padding: clamp(28px, 4vw, 54px) clamp(24px, 5vw, 74px);
+  align-self: center;
+}
+body.px-catalog-page .nara-products-hero h1 {
+  max-width: 760px;
+  margin: 0;
+  font-size: clamp(34px, 3.5vw, 50px);
+  line-height: 1.12;
+  overflow-wrap: normal;
+  word-break: normal;
+}
+body.px-catalog-page .nara-products-hero-copy > p:last-child {
+  max-width: 620px;
+  font-size: clamp(12px, 1vw, 14px);
+  line-height: 1.75;
+}
+body.px-catalog-page .nara-products-hero-image {
+  min-width: 0;
+  min-height: 270px;
+  background-color: var(--nara-forest);
+  background-repeat: no-repeat;
+  background-position: center, right center;
+  background-size: 100% 100%, auto 100%;
+}
+body.px-catalog-page .nara-products-grid { align-items: stretch; }
+body.px-catalog-page .nara-product-feature { min-width: 0; align-items: start; }
+body.px-catalog-page .nara-product-photo { min-width: 0; aspect-ratio: 4 / 3; }
+body.px-catalog-page .nara-product-photo img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center;
+}
+body.px-catalog-page .nara-product-copy { min-width: 0; }
+body.px-catalog-page .nara-product-copy h2 { line-height: 1.08; overflow-wrap: normal; }
+body.px-catalog-page .nara-product-copy > p:not(.nara-product-kicker):not(.nara-product-subtitle) { font-size: 12px; line-height: 1.75; }
+
+/* Product detail pages and article pages: keep media/cards within the viewport. */
+body.product-experience-page .product-detail-image,
+body.product-experience-page .nara-aroma-studio-frame,
+body.product-experience-page iframe { max-width: 100%; }
+body.product-experience-page .nara-aroma-studio-frame { width: 100%; border: 0; }
+body.product-experience-page .specifications-grid { align-items: stretch; }
+body.product-experience-page .specification-card,
+body.product-experience-page .product-highlight,
+body.product-experience-page .product-description-grid,
+body.product-experience-page .customization-grid { min-width: 0; }
+.article-main, .article-layout, .article-content, .contact-main-section,
+.contact-main-grid, .intro-grid, .quality-grid, .export-grid,
+.product-description-grid, .customization-grid { min-width: 0; }
+.article-main img, .article-content img, .blog-card img, .article-hero img { height: auto; }
+body :is(input, select, textarea) { font-size: 16px; }
+
+/* Navigation uses a compact, tappable drawer on both small tablets and phones. */
+@media (min-width: 901px) {
+  .site-header .container.navbar { min-height: 104px; }
+  .site-header .main-nav { gap: clamp(16px, 2.1vw, 32px); }
+  .site-header .main-nav > a,
+  .site-header .main-nav details.nav-dropdown > summary { font-size: 14px; }
+}
+
+@media (max-width: 1100px) {
+  .home-page .products-section .container { width: min(92%, 900px); }
+  .home-page .product-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 22px; }
+  .px-product-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .px-catalog-hero-grid { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 28px; }
+  .px-catalog-stage { min-height: 410px; }
+  .site-footer .footer-main { gap: clamp(22px, 4vw, 52px); }
+}
+
+@media (max-width: 900px) {
+  html { scroll-padding-top: 78px; }
+  .site-header { position: relative; }
+  .home-page .site-header { position: absolute; }
+  .site-header .container.navbar { min-height: 72px; }
+  .site-header .main-nav { max-height: min(72vh, 620px); overscroll-behavior: contain; }
+  .site-header .main-nav > a,
+  .site-header .main-nav details.nav-dropdown > summary { min-height: 46px; }
+  .container { width: min(92%, 780px); }
+  .section { padding-block: clamp(48px, 7vw, 76px); }
+  .home-page .hero { min-height: 650px; background-position: center center; }
+  .home-page .hero-content { padding-top: 64px; }
+  .home-page .hero h1 { font-size: clamp(42px, 7.2vw, 66px); }
+  .home-page .products-section .section-heading { align-items: flex-start; }
+  .home-page .product-info p:not(.product-category) { min-height: 0; }
+  body.px-catalog-page .nara-products-hero-inner { grid-template-columns: minmax(0, 1fr) minmax(240px, .8fr); min-height: 250px; }
+  body.px-catalog-page .nara-products-hero-copy { padding: 30px clamp(24px, 4vw, 38px); }
+  body.px-catalog-page .nara-products-hero h1 { font-size: clamp(32px, 4.1vw, 42px); }
+  body.px-catalog-page .nara-products-hero-image { min-height: 250px; }
+  body.px-catalog-page .nara-products-grid { grid-template-columns: 1fr; gap: 30px; }
+  body.px-catalog-page .nara-product-feature { grid-template-columns: minmax(180px, .85fr) minmax(0, 1.15fr); gap: 22px; }
+  body.px-catalog-page .nara-product-photo { aspect-ratio: 4 / 3; }
+  .px-catalog-hero { min-height: auto; padding-top: 90px; padding-bottom: 70px; }
+  .px-catalog-hero-grid { grid-template-columns: 1fr; }
+  .px-catalog-stage { min-height: 460px; }
+  .px-section-heading { flex-wrap: wrap; }
+  .site-footer .footer-main { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+
+@media (max-width: 600px) {
+  .container { width: min(90%, 520px); }
+  .section { padding-block: 48px; }
+  body :is(h1, h2, h3) { overflow-wrap: normal; }
+  .home-page .hero { min-height: 610px; background-position: 57% center; }
+  .home-page .hero-content { padding-top: 58px; }
+  .home-page .hero-label { font-size: 9px; letter-spacing: .15em; line-height: 1.7; }
+  .home-page .hero h1 { max-width: 100%; font-size: clamp(38px, 11vw, 52px); line-height: 1.03; }
+  .home-page .hero-description { font-size: 14px; line-height: 1.75; }
+  .home-page .hero-buttons { display: flex; align-items: stretch; flex-direction: column; gap: 12px; max-width: 320px; }
+  .home-page .hero-buttons .btn { width: 100%; justify-content: center; }
+  .home-page .products-section { padding-block: 52px; }
+  .home-page .products-section .section-heading { display: block; margin-bottom: 24px; }
+  .home-page .products-section .section-heading h2 { font-size: clamp(31px, 8.3vw, 42px); }
+  .home-page .product-grid { grid-template-columns: 1fr; gap: 22px; }
+  .home-page .product-image { aspect-ratio: 4 / 3; }
+  .home-page .product-info { padding: 20px; }
+  .home-page .product-info h3 { font-size: 25px; }
+  body.px-catalog-page .nara-products-hero-inner { display: flex; flex-direction: column; min-height: 0; }
+  body.px-catalog-page .nara-products-hero-copy { padding: 30px 22px 26px; }
+  body.px-catalog-page .nara-products-hero h1 { font-size: clamp(32px, 9vw, 42px); line-height: 1.12; }
+  body.px-catalog-page .nara-products-hero-image { width: 100%; min-height: 190px; background-position: 100% center; background-size: 100% 100%, auto 100%; }
+  body.px-catalog-page .nara-products-catalog { padding: 28px 20px; }
+  body.px-catalog-page .nara-products-grid { gap: 34px; }
+  body.px-catalog-page .nara-product-feature { grid-template-columns: 1fr; gap: 16px; }
+  body.px-catalog-page .nara-product-photo { aspect-ratio: 16 / 10; }
+  body.px-catalog-page .nara-product-copy { padding: 0 2px; }
+  body.px-catalog-page .nara-product-copy h2 { font-size: 28px; line-height: 1.08; }
+  body.px-catalog-page .nara-product-copy > p:not(.nara-product-kicker):not(.nara-product-subtitle) { font-size: 13px; }
+  .px-catalog-hero { padding: 54px 0 52px; }
+  .px-catalog-copy h1 { font-size: clamp(42px, 12vw, 58px); }
+  .px-catalog-intro { font-size: 14px; }
+  .px-catalog-stage { min-height: 345px; }
+  .px-product-grid { grid-template-columns: 1fr; gap: 30px; }
+  .px-card-image { aspect-ratio: 4 / 3.2; }
+  .px-section-heading { display: block; margin-bottom: 28px; }
+  .px-section-heading h2 { font-size: clamp(34px, 9vw, 46px); }
+  .px-section-heading > p { margin-top: 15px; }
+  .px-custom-panel { padding: 26px 20px; }
+  .px-custom-image { height: auto; max-height: 280px; object-fit: contain; }
+  .site-footer .footer-main, .footer-main { grid-template-columns: 1fr; gap: 30px; padding-block: 46px 36px; }
+  .site-footer .footer-brand, .footer-brand { grid-column: auto; }
+  .site-footer .footer-bottom, .footer-bottom { display: flex; flex-direction: column; align-items: flex-start; gap: 9px; }
+  .contact-main-grid, .intro-grid, .quality-grid, .export-grid, .product-description-grid, .customization-grid { grid-template-columns: 1fr !important; gap: 26px; }
+  .specifications-grid { grid-template-columns: repeat(2, minmax(0, 1fr)) !important; gap: 12px; }
+  .product-highlight { grid-template-columns: 1fr !important; }
+  .article-main { padding-top: 36px; }
+  .article-main h1, .article-content h1 { font-size: clamp(34px, 9vw, 46px); }
+  .article-main img, .article-content img { border-radius: 2px; }
+  .quote-box { padding: 30px 22px; }
+  input, select, textarea { width: 100%; min-height: 46px; }
+}
+
+@media (max-width: 390px) {
+  .container { width: calc(100% - 32px); }
+  .site-header .container.navbar { padding-inline: 16px; }
+  .site-header .logo-image { width: 36px; height: 36px; }
+  .site-header .logo { gap: 8px; }
+  .site-header .logo-main { font-size: 18px; }
+  .site-header .logo-sub { font-size: 7px; letter-spacing: 1.3px; }
+  .mobile-menu-toggle { width: 40px; height: 40px; }
+  .specifications-grid { grid-template-columns: 1fr !important; }
+  body.px-catalog-page .nara-products-hero-copy { padding-inline: 18px; }
+  body.px-catalog-page .nara-products-catalog { padding-inline: 16px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { scroll-behavior: auto !important; animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; }
+}
