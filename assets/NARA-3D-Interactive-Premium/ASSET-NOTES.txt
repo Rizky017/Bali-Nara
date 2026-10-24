@@ -1,0 +1,29 @@
+ASSET NOTES — NARA Interactive 3D Incense Aroma Studio
+
+All aroma cut-outs are served locally from ./assets/aromas/. The viewer creates Three.js sprites for selected floral/fruity/woody/resin scent visuals and ingredient visuals in Basic mode. The main incense stick is a GLB mesh.
+
+pineapple.webp: primary whole pineapple cutout used as source thumbnail.
+pineapple-slices.webp: refreshed high-resolution transparent composition featuring a whole ripe pineapple with several freshly cut pineapple wedges; fruit pieces are individually alpha-masked, scaled and arranged for the animated Pineapple aroma sprite.
+rose-petal.webp: red floating petal cut-out derived from the previous rose concept visual.
+
+This asset set does not assert that each depicted item is present in the real formulation. Musk is shown as a soft pearl-like scent aura. Ingredient visual mode in Basic shows wood/resin/honey-like natural materials as illustrative visuals.
+
+
+UPDATE — 24 October 2026
+- `assets/textures/incense-traditional.webp`, `incense-herbal-sandalwood.webp`, `incense-herbal-frankincense.webp`, and `incense-hand-rolled.webp` are color/bump maps derived from the four supplied stick photos. The original reference photos are stored under `assets/textures/reference-photos/`.
+- The original GLB has no UV coordinates. `aroma-viewer.js` creates cylinder-aligned UV coordinates at load time, then applies the selected photo-based map to the coated-stick mesh. It deliberately leaves the exposed wood stem untextured.
+- Herbal Sandalwood and Herbal Frankincense have distinct mapped surfaces. Traditional Dip uses the plain/dipped reference; the Hand-Rolled profile uses the hand-rolled reference for both the aroma selections and the `Basic` option.
+- Traditional Dip now presents 29 English display names; see `TRADITIONAL-AROMA-CATALOG-EN.md` for the Indonesian-to-English mapping. New aroma cutouts use the existing sprite-based 3D visualization pattern.
+
+
+UPDATE — 24 October 2026 · Custom configurator and colour consistency
+- The four colour maps were normalized horizontally to reduce the light-to-dark wraparound shift when rotating the 3D rod, and the texture UV seam was feathered for a cleaner join.
+- Studio lighting is now more balanced around the model, with lower directional intensity; the photographed colour map supplies the visible surface detail without reusing the colour map as a bump map.
+- In `demo.html?profile=custom`, users can select Plain & Dipped, Herbal Sandalwood, Herbal Frankincense, or Hand-Rolled texture; choose from the 29 Traditional Dip fragrance names; and set size 16–32 in steps of 2 (including 28).
+- Size selection scales both rod diameter and length in the preview. The size values are presented as product size options without specifying a measurement unit; final production dimensions must be agreed separately.
+- The custom summary updates immediately with the selected texture, aroma, and size. The aroma image sprites update with the fragrance selection.
+
+- Aroma cutouts were refined to reduce pale matte halos and fill tiny transparent pinholes from the original background-removal pass. The bundled preview was regenerated from the cleaned assets.
+- The Hand-Rolled profile calls its unscented/basic material option `Basic`; this option uses the same hand-rolled texture as the other Hand-Rolled choices.
+- Aroma list scrolling now hands wheel/touch movement to the parent product page at the start/end of a scrollable list.
+- Mobile/tablet iframe heights are tailored by studio profile to avoid oversized blank areas.
