@@ -1,4 +1,0 @@
-User-agent: *
-Allow: /
-
-Sitemap: https://bali-nara.com/sitemap.xml
