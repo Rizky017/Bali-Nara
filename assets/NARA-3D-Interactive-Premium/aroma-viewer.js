@@ -1,0 +1,682 @@
+import * as THREE from 'three';
+import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+
+const canvas = document.querySelector('#scene');
+const statusEl = document.querySelector('#status');
+const scene = new THREE.Scene();
+const camera = new THREE.PerspectiveCamera(32, 1, 0.01, 100);
+camera.position.set(0, 0, 2.22);
+const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true, powerPreference: 'low-power' });
+renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 1.35));
+renderer.outputColorSpace = THREE.SRGBColorSpace;
+renderer.toneMapping = THREE.ACESFilmicToneMapping;
+renderer.toneMappingExposure = 1.12;
+renderer.setClearColor(0x000000, 0);
+renderer.shadowMap.enabled = false;
+
+// Balanced all-around light so the incense remains brown when rotated to its back side.
+scene.add(new THREE.HemisphereLight(0xffead4, 0x7d6148, 1.9));
+scene.add(new THREE.AmbientLight(0xffe5c8, 1.35));
+// Low-intensity, balanced lights reduce front/back colour shifts while preserving gentle 3D highlights.
+const lightSpecs = [
+  [0xffe6cb, .58, [-1.5, 1.1, 2.4]],
+  [0xffe6cb, .58, [1.5, .2, 2.2]],
+  [0xffe6cb, .58, [-1.3, .7, -2.4]],
+  [0xffe6cb, .58, [1.1, -.6, -2.2]],
+];
+for (const [color, intensity, position] of lightSpecs) {
+  const light = new THREE.DirectionalLight(color, intensity);
+  light.position.set(...position); scene.add(light);
+}
+
+const controls = new OrbitControls(camera, renderer.domElement);
+controls.enableDamping = true;
+controls.dampingFactor = 0.055;
+controls.enablePan = false;
+controls.enableZoom = true;
+controls.autoRotate = true;
+controls.autoRotateSpeed = 0.32;
+controls.minDistance = 1.35;
+controls.maxDistance = 3.25;
+controls.minPolarAngle = 0.12;
+controls.maxPolarAngle = Math.PI - 0.12;
+controls.target.set(0, 0, 0);
+controls.update();
+
+const incenseGroup = new THREE.Group();
+incenseGroup.position.x = 0.12;
+scene.add(incenseGroup);
+const aromaGroup = new THREE.Group();
+aromaGroup.position.x = 0.12;
+scene.add(aromaGroup);
+const loader = new GLTFLoader();
+const textureLoader = new THREE.TextureLoader();
+const textureCache = new Map();
+const stickTextureCache = new Map();
+const incenseBodyMeshes = [];
+let activeStickTextureKey = null;
+let stickTextureRequest = 0;
+let selectionToken = 0;
+let activeDecor = [];
+let activeKind = 'jasmine';
+let lastTime = 0;
+let incenseModel = null;
+let selectedCustomTexture = 'incense-hand-rolled';
+let selectedCustomSize = 24;
+
+const profile = new URLSearchParams(window.location.search).get('profile') || 'hand-rolled';
+document.body.classList.add(`profile-${profile}`);
+const productConfigs = {
+ 'hand-rolled': {
+  eyebrow:'Selected Aroma', heading:'Select Aroma', note:'Hand-Rolled<br>Incense · Product 003', defaultId:'jasmine',
+  data:[
+   {id:'jasmine',label:'Jasmine',category:'floral',sub:'Floral',eyebrow:'Selected Aroma',title:'Jasmine',description:'A delicate and calming fragrance, bringing a sense of peace and harmony.',summary:'Pure floral notes<br>Soft · Calm · Botanical'},
+   {id:'rose',label:'Rose',category:'floral',sub:'Floral',eyebrow:'Selected Aroma',title:'Rose',description:'A rich, velvety floral scent that brings warmth and calm.',summary:'Velvety floral notes<br>Romantic · Warm · Elegant'},
+   {id:'musk',label:'Musk',category:'warm',sub:'Warm & sensual',eyebrow:'Selected Aroma',title:'Musk',description:'A soft, enveloping fragrance with a warm and sensual character.',summary:'Soft musk aura<br>Warm · Smooth · Intimate'},
+   {id:'bali',label:'Bali Signature',category:'fresh',sub:'Tropical signature',eyebrow:'Selected Aroma',title:'Bali Signature',description:'A distinctive tropical fragrance inspired by the calm, green character of Bali.',summary:'Tropical floral notes<br>Fresh · Serene · Distinctive'},
+   {id:'pineapple',label:'Pineapple',category:'fresh',sub:'Fruity & fresh',eyebrow:'Selected Aroma',title:'Pineapple',description:'A bright, juicy fragrance with a fresh tropical character.',summary:'Fresh fruity notes<br>Juicy · Bright · Tropical'},
+   {id:'frangipani',label:'Frangipani',category:'floral',sub:'Floral',eyebrow:'Selected Aroma',title:'Frangipani',description:'A gentle tropical floral fragrance with a soft, relaxing character.',summary:'Tropical floral notes<br>Soft · Airy · Relaxing'},
+   {id:'champaca',label:'Champaca',category:'floral',sub:'Floral',eyebrow:'Selected Aroma',title:'Champaca',description:'A warm floral fragrance with a rich, graceful character.',summary:'Warm floral notes<br>Rich · Golden · Graceful'},
+   {id:'sandalwood',label:'Sandalwood',category:'woody',sub:'Woody',eyebrow:'Selected Aroma',title:'Sandalwood',description:'A grounded woody fragrance with a warm, mellow character.',summary:'Woody notes<br>Grounded · Warm · Calm'},
+   {id:'frankincense',label:'Frankincense',category:'resin',sub:'Resin',eyebrow:'Selected Aroma',title:'Frankincense',description:'A distinctive resinous fragrance with a quiet, meditative character.',summary:'Resinous notes<br>Resin · Warm · Meditative'},
+   {id:'honey-frankincense',label:'Honey Frankincense',category:'resin',sub:'Sweet & warm',eyebrow:'Selected Aroma',title:'Honey Frankincense',description:'A mellow, sweet-warm fragrance with a gentle resinous finish.',summary:'Sweet resin notes<br>Honeyed · Warm · Smooth'}
+  ]
+ },
+ traditional: {
+  eyebrow:'Fragrance Direction', heading:'Explore Fragrance', note:'Traditional Dip<br>Fragrance-infused · Product 001', defaultId:'sandalwood',
+  data:[
+   {id:'sandalwood',label:'Sandalwood',category:'woody',sub:'Warm & woody',eyebrow:'Fragrance Direction',title:'Sandalwood',description:'A mellow, refined woody fragrance inspired by sandalwood, with a warm and grounded character.',summary:'Woody fragrance direction<br>Warm · Smooth · Grounded'},
+   {id:'honey-sandalwood',label:'Honey Sandalwood',category:'woody',sub:'Soft & honeyed',eyebrow:'Fragrance Direction',title:'Honey Sandalwood',description:'A rounded woody profile with a soft, honeyed sweetness and a warm finish.',summary:'Woody fragrance direction<br>Honeyed · Soft · Warm'},
+   {id:'agarwood',label:'Agarwood',category:'woody',sub:'Deep & resinous',eyebrow:'Fragrance Direction',title:'Agarwood',description:'A deep, resinous wood-inspired fragrance with a rich and complex character.',summary:'Woody fragrance direction<br>Deep · Resinous · Complex'},
+   {id:'benzoin',label:'Benzoin Resin',category:'resin',sub:'Balsamic & warm',eyebrow:'Fragrance Direction',title:'Benzoin Resin',description:'A balsamic, amber-like fragrance direction inspired by warm aromatic resins.',summary:'Resin-inspired direction<br>Balsamic · Amber · Warm'},
+   {id:'thousand-flowers',label:'Thousand Flowers',category:'floral',sub:'Floral bouquet',eyebrow:'Fragrance Direction',title:'Thousand Flowers',description:'A generous bouquet-style floral direction combining soft, bright, and lush floral impressions.',summary:'Floral fragrance direction<br>Abundant · Soft · Botanical'},
+   {id:'rose',label:'Rose',category:'floral',sub:'Rich floral',eyebrow:'Fragrance Direction',title:'Rose',description:'A rich, velvety rose-inspired fragrance with a romantic and elegant character.',summary:'Floral fragrance direction<br>Velvety · Romantic · Elegant'},
+   {id:'jasmine',label:'Jasmine',category:'floral',sub:'White floral',eyebrow:'Fragrance Direction',title:'Jasmine',description:'A delicate white-floral fragrance direction with a soft, calming character.',summary:'Floral fragrance direction<br>Soft · Fresh · Calming'},
+   {id:'sai-flora',label:'Sai Flora',category:'floral',sub:'Signature floral',eyebrow:'Fragrance Direction',title:'Sai Flora',description:'A signature floral fragrance name retained as supplied. The final scent profile can be confirmed during sampling.',summary:'Signature fragrance<br>Floral · Refined · Distinctive'},
+   {id:'lemongrass',label:'Lemongrass',category:'fresh',sub:'Citrus & green',eyebrow:'Fragrance Direction',title:'Lemongrass',description:'A crisp, green citrus-inspired fragrance direction with a bright and refreshing character.',summary:'Fresh fragrance direction<br>Green · Citrusy · Bright'},
+   {id:'lavender',label:'Lavender',category:'floral',sub:'Herbal floral',eyebrow:'Fragrance Direction',title:'Lavender',description:'A gentle aromatic-floral direction inspired by lavender, with a fresh and soothing impression.',summary:'Floral fragrance direction<br>Herbal · Fresh · Relaxing'},
+   {id:'musk',label:'Musk',category:'warm',sub:'Soft & sensual',eyebrow:'Fragrance Direction',title:'Musk',description:'A smooth, warm fragrance direction with a soft, enveloping and sensual character.',summary:'Warm fragrance direction<br>Soft · Smooth · Sensual'},
+   {id:'champaca',label:'Champaca',category:'floral',sub:'Golden floral',eyebrow:'Fragrance Direction',title:'Champaca',description:'A warm, golden floral fragrance direction with a rich and graceful character.',summary:'Floral fragrance direction<br>Warm · Rich · Graceful'},
+   {id:'lotus',label:'Lotus',category:'floral',sub:'Fresh floral',eyebrow:'Fragrance Direction',title:'Lotus',description:'A serene floral direction inspired by lotus blossoms, with a clean and airy impression.',summary:'Floral fragrance direction<br>Airy · Serene · Delicate'},
+   {id:'honey',label:'Honey',category:'warm',sub:'Sweet & warm',eyebrow:'Fragrance Direction',title:'Honey',description:'A rounded sweet fragrance direction with golden, mellow warmth.',summary:'Warm fragrance direction<br>Sweet · Golden · Mellow'},
+   {id:'bhakti',label:'Bhakti',category:'signature',sub:'Signature fragrance',eyebrow:'Fragrance Direction',title:'Bhakti',description:'A signature fragrance name retained as supplied. Its final fragrance character can be agreed through product sampling.',summary:'Signature fragrance<br>Distinctive · Warm · Refined'},
+   {id:'senthamil',label:'Senthamil',category:'signature',sub:'Signature fragrance',eyebrow:'Fragrance Direction',title:'Senthamil',description:'A signature fragrance name retained as supplied. The final fragrance profile is confirmed against the approved sample.',summary:'Signature fragrance<br>Expressive · Rich · Distinctive'},
+   {id:'maiden',label:'Maiden',category:'floral',sub:'Soft floral',eyebrow:'Fragrance Direction',title:'Maiden',description:'A soft, elegant floral direction with a light, delicate and gently powdery impression.',summary:'Floral fragrance direction<br>Delicate · Soft · Elegant'},
+   {id:'sage',label:'Sage',category:'botanical',sub:'Herbal & green',eyebrow:'Fragrance Direction',title:'Sage',description:'A green, herbal fragrance direction with a dry, aromatic character.',summary:'Botanical fragrance direction<br>Green · Herbal · Earthy'},
+   {id:'cinnamon',label:'Cinnamon',category:'spice',sub:'Warm spice',eyebrow:'Fragrance Direction',title:'Cinnamon',description:'A warm spice-inspired fragrance direction with a sweet, woody and gently spicy finish.',summary:'Spice fragrance direction<br>Warm · Sweet · Spiced'},
+   {id:'tuberose',label:'Tuberose',category:'floral',sub:'Creamy white floral',eyebrow:'Fragrance Direction',title:'Tuberose',description:'A creamy white-floral direction inspired by tuberose blooms, with a lush, elegant character.',summary:'Floral fragrance direction<br>Creamy · Lush · Elegant'},
+   {id:'sakura',label:'Cherry Blossom',category:'floral',sub:'Light floral',eyebrow:'Fragrance Direction',title:'Cherry Blossom',description:'A light blossom-inspired fragrance direction with a soft, airy and gently sweet impression.',summary:'Floral fragrance direction<br>Airy · Delicate · Spring-like'},
+   {id:'orchid',label:'Orchid',category:'floral',sub:'Exotic floral',eyebrow:'Fragrance Direction',title:'Orchid',description:'An exotic floral direction inspired by orchid blooms, with a smooth, refined character.',summary:'Floral fragrance direction<br>Exotic · Smooth · Refined'},
+   {id:'pineapple',label:'Pineapple',category:'fruity',sub:'Fresh & tropical',eyebrow:'Fragrance Direction',title:'Pineapple',description:'A bright tropical fruit-inspired fragrance direction with juicy sweetness and freshness.',summary:'Fruity fragrance direction<br>Juicy · Bright · Tropical'},
+   {id:'apple',label:'Apple',category:'fruity',sub:'Crisp & fruity',eyebrow:'Fragrance Direction',title:'Apple',description:'A crisp fruit-inspired direction with a fresh, clean and gently sweet character.',summary:'Fruity fragrance direction<br>Crisp · Fresh · Sweet'},
+   {id:'orange',label:'Orange',category:'citrus',sub:'Bright citrus',eyebrow:'Fragrance Direction',title:'Orange',description:'A bright citrus-inspired fragrance direction with a cheerful, fresh and juicy character.',summary:'Citrus fragrance direction<br>Bright · Juicy · Fresh'},
+   {id:'green-tea',label:'Green Tea',category:'fresh',sub:'Clean & green',eyebrow:'Fragrance Direction',title:'Green Tea',description:'A clean, green fragrance direction inspired by green tea, with a gentle and refreshing impression.',summary:'Fresh fragrance direction<br>Clean · Green · Light'},
+   {id:'kraton',label:'Kraton',category:'signature',sub:'Signature fragrance',eyebrow:'Fragrance Direction',title:'Kraton',description:'A signature fragrance name retained as supplied. The scent direction can be validated with a production sample.',summary:'Signature fragrance<br>Traditional · Warm · Distinctive'},
+   {id:'parijata',label:'Night Jasmine',category:'floral',sub:'Parijata floral',eyebrow:'Fragrance Direction',title:'Night Jasmine',description:'A floral direction inspired by parijata, also known as night-flowering jasmine, with a delicate blossom impression.',summary:'Floral fragrance direction<br>Delicate · White floral · Airy'},
+   {id:'majumu',label:'Majumu',category:'signature',sub:'Signature fragrance',eyebrow:'Fragrance Direction',title:'Majumu',description:'A signature fragrance name retained as supplied. The final scent profile can be agreed during sampling.',summary:'Signature fragrance<br>Distinctive · Custom · Refined'}
+  ]
+ },
+ herbal: {
+  eyebrow:'Ingredient Direction', heading:'Select Ingredient', note:'Herbal Incense<br>Ingredient-based · Product 002', defaultId:'sandalwood',
+  data:[
+   {id:'sandalwood',label:'Sandalwood',category:'woody',sub:'Woody',eyebrow:'Available Ingredient',title:'Sandalwood',description:'An ingredient-led woody direction incorporated into the incense mixture before shaping and drying. Subject to availability.',summary:'Ingredient-based scent<br>Woody · Warm · Grounded'},
+   {id:'frankincense',label:'Frankincense',category:'resin',sub:'Resin',eyebrow:'Available Ingredient',title:'Frankincense',description:'A resin-led direction blended into the incense formulation rather than applied by post-production fragrance dipping. Subject to availability.',summary:'Ingredient-based scent<br>Resinous · Warm · Meditative'},
+   {id:'agarwood',label:'Agarwood',category:'woody',sub:'Aromatic wood',eyebrow:'Available Ingredient',title:'Agarwood',description:'An aromatic wood ingredient option for the incense formulation, subject to availability and confirmation.',summary:'Ingredient-based scent<br>Deep · Woody · Complex'}
+  ]
+ },
+ custom: {
+  eyebrow:'Custom Development', heading:'Customize Your Incense', note:'Custom Incense<br>Texture · Aroma · Size', defaultId:'sandalwood',
+  data:[
+   {id:'floral-blend',label:'Floral Blend',category:'floral',sub:'Aroma direction',eyebrow:'Fragrance Direction',title:'Floral Blend',description:'Explore a floral-led direction using references such as jasmine, rose, frangipani, or champaca. Final blend and availability are confirmed through discussion.',summary:'Aroma exploration<br>Floral · Botanical · Balanced'},
+   {id:'jasmine-option',label:'Jasmine',category:'floral',sub:'Floral',eyebrow:'Fragrance Direction',title:'Jasmine',description:'A soft white-floral direction for a custom brief. This visual illustrates the scent family; it does not confirm a fixed formula.',summary:'Floral direction<br>Soft · Fresh · Calm'},
+   {id:'rose-option',label:'Rose',category:'floral',sub:'Floral',eyebrow:'Fragrance Direction',title:'Rose',description:'A rich floral direction inspired by blooming rose petals. Final fragrance type depends on available materials and formulation.',summary:'Floral direction<br>Velvety · Warm · Elegant'},
+   {id:'frangipani-option',label:'Frangipani',category:'floral',sub:'Tropical floral',eyebrow:'Fragrance Direction',title:'Frangipani',description:'A tropical floral direction for custom development, subject to the agreed brief and production feasibility.',summary:'Floral direction<br>Tropical · Soft · Airy'},
+   {id:'champaca-option',label:'Champaca',category:'floral',sub:'Golden floral',eyebrow:'Fragrance Direction',title:'Champaca',description:'A warm, golden floral direction that can be discussed as part of a custom scent brief.',summary:'Floral direction<br>Warm · Rich · Golden'},
+   {id:'woody-fragrance',label:'Woody Fragrance',category:'woody',sub:'Fragrance direction',eyebrow:'Fragrance Direction',title:'Woody Fragrance',description:'Explore wood-forward scent profiles, from soft and mellow to deep and resinous. The selected direction will be reviewed for feasibility.',summary:'Aroma exploration<br>Woody · Warm · Grounded'},
+   {id:'sandalwood-option',label:'Sandalwood',category:'woody',sub:'Aromatic wood',eyebrow:'Ingredient / Aroma Direction',title:'Sandalwood',description:'Sandalwood can be discussed as an aromatic-wood direction, depending on sourcing, formulation, and availability.',summary:'Woody direction<br>Mellow · Smooth · Warm'},
+   {id:'agarwood-option',label:'Agarwood',category:'woody',sub:'Aromatic wood',eyebrow:'Ingredient / Aroma Direction',title:'Agarwood',description:'A deeper aromatic-wood direction for discussion. Ingredient grade, sourcing, and availability must be confirmed before quotation.',summary:'Woody direction<br>Deep · Resinous · Complex'},
+   {id:'aromatic-woods',label:'Aromatic Woods',category:'woody',sub:'Material direction',eyebrow:'Material Direction',title:'Aromatic Woods',description:'Wood-based aromatic materials may be discussed based on the desired scent profile and what is available to the production partner.',summary:'Materials brief<br>Aromatic wood · Wood notes'},
+   {id:'botanical-blend',label:'Botanical Blend',category:'fresh',sub:'Botanical direction',eyebrow:'Fragrance Direction',title:'Botanical Blend',description:'A green, botanical direction that may combine floral or plant-inspired notes. Specific ingredients depend on the final formulation.',summary:'Aroma exploration<br>Green · Botanical · Natural-inspired'},
+   {id:'spice-blend',label:'Spice-inspired',category:'spice',sub:'Spice direction',eyebrow:'Fragrance Direction',title:'Spice-inspired',description:'A warming spice-inspired direction illustrated with botanical, cinnamon, and clove references. Actual ingredients and proportions depend on the agreed formulation.',summary:'Aroma exploration<br>Warm · Spiced · Botanical'},
+   {id:'fresh-fruity',label:'Fresh & Fruity',category:'fresh',sub:'Fragrance direction',eyebrow:'Fragrance Direction',title:'Fresh & Fruity',description:'Explore bright, fresh or fruit-inspired scent directions. Particular notes and their feasibility are agreed during the brief review.',summary:'Aroma exploration<br>Fresh · Bright · Fruity'},
+   {id:'pineapple-option',label:'Pineapple',category:'fresh',sub:'Fruity direction',eyebrow:'Fragrance Direction',title:'Pineapple',description:'A juicy tropical scent direction for discussion, shown with whole fruit and fresh-cut pineapple as visual inspiration.',summary:'Fruity direction<br>Juicy · Bright · Tropical'},
+   {id:'musk-amber',label:'Musk & Amber',category:'resin',sub:'Warm scent direction',eyebrow:'Fragrance Direction',title:'Musk & Amber',description:'A warm, soft and enveloping scent direction. Exact fragrance materials, composition, and availability require confirmation.',summary:'Aroma exploration<br>Warm · Soft · Rounded'},
+   {id:'perfume-inspired',label:'Perfume-inspired',category:'fresh',sub:'Fragrance direction',eyebrow:'Fragrance Direction',title:'Perfume-inspired',description:'A contemporary fragrance direction inspired by fine fragrance profiles. Options are discussed and assessed for formulation feasibility.',summary:'Aroma exploration<br>Expressive · Refined · Modern'},
+   {id:'frankincense-option',label:'Frankincense',category:'resin',sub:'Natural resin direction',eyebrow:'Ingredient / Aroma Direction',title:'Frankincense',description:'A resinous direction that can be discussed for suitable formulations, subject to material availability and production feasibility.',summary:'Resin direction<br>Resinous · Warm · Meditative'},
+   {id:'honey-resin',label:'Honey Frankincense',category:'resin',sub:'Sweet resin direction',eyebrow:'Fragrance Direction',title:'Honey Frankincense',description:'A sweet-warm resin-inspired direction for exploration. The image is illustrative and does not confirm the precise recipe.',summary:'Aroma exploration<br>Sweet · Warm · Resinous'},
+   {id:'natural-resins',label:'Natural Resins',category:'materials',sub:'Ingredient direction',eyebrow:'Material Direction',title:'Natural Resins',description:'Resin ingredients can be discussed for formulations where suitable, based on sourcing, availability, and the product brief.',summary:'Materials brief<br>Resins · Aroma materials'},
+   {id:'botanical-materials',label:'Botanical Materials',category:'materials',sub:'Ingredient direction',eyebrow:'Material Direction',title:'Botanical Materials',description:'Selected botanical ingredients may be considered depending on formulation goals and available materials. Final composition must be confirmed.',summary:'Materials brief<br>Botanical · Plant-derived references'},
+   {id:'ghee-formulation',label:'Ghee / Natural Base',category:'materials',sub:'Formulation option',eyebrow:'Material Direction',title:'Ghee / Natural Base',description:'Ghee and other natural materials can be discussed for relevant hand-rolled formulations. Inclusion depends on the selected product type and confirmed recipe.',summary:'Formulation brief<br>Ghee · Natural materials'},
+   {id:'coconut-core',label:'Coconut-shell-based Core',category:'materials',sub:'Base material',eyebrow:'Material Direction',title:'Coconut-shell-based Core',description:'A coconut-shell-based core is one material direction to discuss for suitable incense formats. Exact composition varies by manufacturer and formulation.',summary:'Materials brief<br>Coconut-shell-based material'},
+   {id:'wood-binder',label:'Wood-based Binder',category:'materials',sub:'Base material',eyebrow:'Material Direction',title:'Wood-based Binder',description:'A wood-based binder or carrier can be discussed according to the selected format and supplier formulation. Final composition is confirmed separately.',summary:'Materials brief<br>Wood-based binder'},
+   {id:'organic-essential-oil',label:'Organic Essential Oils',category:'materials',sub:'Premium option',eyebrow:'Material Direction',title:'Organic Essential Oils',description:'An organic essential-oil-based formulation may be requested as a premium option, subject to sourcing, compatibility, sampling, and feasibility.',summary:'Premium formulation<br>Essential-oil based · Upon request'},
+   {id:'dimensions',label:'Length, Diameter & Shape',category:'design',sub:'Product geometry',eyebrow:'Development Option',title:'Length, Diameter & Shape',description:'Specify requested length, diameter, shape, and form factor. Feasible dimensions and the final specification are agreed after review and sample evaluation.',summary:'Design brief<br>Length · Diameter · Shape'},
+   {id:'performance',label:'Burning & Smoke Targets',category:'design',sub:'Performance target',eyebrow:'Development Option',title:'Burning & Smoke Targets',description:'Define target burning time, smoke level, intended use, and other product-performance priorities. Targets need assessment and sample testing.',summary:'Performance brief<br>Burning time · Smoke · Intended use'},
+   {id:'packaging',label:'Packaging',category:'design',sub:'Presentation',eyebrow:'Development Option',title:'Packaging',description:'Discuss packaging format, materials, finishing, and presentation requirements. Cost and production feasibility depend on the requested design.',summary:'Presentation brief<br>Packaging · Finishing'},
+   {id:'private-label',label:'Private Label',category:'design',sub:'Branding',eyebrow:'Development Option',title:'Private Label',description:'Private-label branding can be discussed, including labeling and product presentation requirements, subject to order conditions and feasibility.',summary:'Brand brief<br>Private label · Product presentation'},
+   {id:'rd-sampling',label:'R&D & Sampling',category:'design',sub:'Development process',eyebrow:'Development Option',title:'R&D & Sampling',description:'New formulations or specifications may require additional research, development, and sampling. Associated cost, MOQ, and lead time are discussed after reviewing the brief.',summary:'Project review<br>R&D · Samples · Feasibility'}
+  ]
+ }
+};
+const config = productConfigs[profile] || productConfigs['hand-rolled'];
+// Custom development uses the full Traditional Dip fragrance catalogue as its aroma selector.
+const data = profile === 'custom' ? productConfigs.traditional.data : config.data;
+const heroTitle = document.querySelector('#hero-title');
+const heroCategory = document.querySelector('#hero-category');
+const heroDescription = document.querySelector('#hero-description');
+const heroSummary = document.querySelector('#hero-summary');
+const eyebrow = document.querySelector('#eyebrow');
+const stageStamp = document.querySelector('#stage-stamp');
+const choices = document.querySelector('#choices');
+const selectorTitle = document.querySelector('.selector-title');
+const selectorNote = document.querySelector('.selector-note');
+const choiceButtons = new Map();
+const customControls = document.querySelector('#custom-controls');
+const customTextureButtons = [...document.querySelectorAll('[data-texture]')];
+const customAromaSelect = document.querySelector('#custom-aroma');
+const customSizeSelect = document.querySelector('#custom-size');
+const customBuildSummary = document.querySelector('#custom-build-summary');
+const customRequestAroma = document.querySelector('#custom-request-aroma');
+const customRequestNotes = document.querySelector('#custom-request-notes');
+const customRequestWhatsApp = document.querySelector('#custom-request-whatsapp');
+
+// When an aroma list reaches either edge, pass the remaining wheel/touch movement
+// to the containing product page instead of trapping the visitor inside the iframe.
+function bindOuterPageScrollHandoff(element) {
+ if (!element) return;
+ const atEdge = delta => {
+  const maxScroll = element.scrollHeight - element.clientHeight;
+  if (maxScroll <= 2) return false;
+  return delta > 0 ? element.scrollTop >= maxScroll - 2 : element.scrollTop <= 2;
+ };
+ const sendScroll = delta => {
+  if (!Number.isFinite(delta) || Math.abs(delta) < 1) return;
+  if (window.parent && window.parent !== window) {
+   window.parent.postMessage({ type: 'nara-scroll-handoff', deltaY: delta }, '*');
+  } else {
+   window.scrollBy({ top: delta, behavior: 'auto' });
+  }
+ };
+ element.addEventListener('wheel', event => {
+  if (!atEdge(event.deltaY)) return;
+  event.preventDefault();
+  sendScroll(event.deltaY);
+ }, { passive: false });
+ let touchY = null;
+ element.addEventListener('touchstart', event => {
+  touchY = event.touches && event.touches.length ? event.touches[0].clientY : null;
+ }, { passive: true });
+ element.addEventListener('touchmove', event => {
+  if (touchY === null || !event.touches || !event.touches.length) return;
+  const currentY = event.touches[0].clientY;
+  const delta = touchY - currentY; // Upward finger movement means scroll down.
+  if (atEdge(delta)) {
+   event.preventDefault();
+   sendScroll(delta);
+  }
+  touchY = currentY;
+ }, { passive: false });
+ element.addEventListener('touchend', () => { touchY = null; }, { passive: true });
+}
+bindOuterPageScrollHandoff(document.querySelector('#choices'));
+bindOuterPageScrollHandoff(customControls);
+selectorTitle.textContent=config.heading;
+selectorNote.innerHTML=config.note;
+document.title=`NARA — ${profile==='hand-rolled'?'Hand-Rolled Incense':profile==='traditional'?'Traditional Dip Incense':profile==='herbal'?'Herbal Incense':'Custom Incense Development'} Studio`;
+
+const customTextureLabels = {
+ 'incense-traditional':'Plain Incense',
+ 'incense-herbal-sandalwood':'Dipped Incense',
+ 'incense-herbal-frankincense':'Herbal Incense',
+ 'incense-hand-rolled':'Hand-Rolled'
+};
+if (profile === 'custom') {
+ customControls.hidden = false;
+ choices.hidden = true;
+ customAromaSelect.innerHTML = '';
+ data.forEach(item => {
+  const option = document.createElement('option');
+  option.value = item.id; option.textContent = item.label;
+  customAromaSelect.append(option);
+ });
+ customAromaSelect.value = config.defaultId;
+ customSizeSelect.value = String(selectedCustomSize);
+ customTextureButtons.forEach(button => {
+  button.setAttribute('aria-pressed', button.dataset.texture === selectedCustomTexture ? 'true' : 'false');
+  button.addEventListener('click', () => {
+   selectedCustomTexture = button.dataset.texture;
+   customTextureButtons.forEach(option => option.setAttribute('aria-pressed', option === button ? 'true' : 'false'));
+   applyIncenseTexture(activeKind);
+   updateCustomBuildSummary();
+  });
+ });
+ customAromaSelect.addEventListener('change', () => selectAroma(customAromaSelect.value));
+ customSizeSelect.addEventListener('change', () => {
+  selectedCustomSize = Number(customSizeSelect.value) || 24;
+  applyCustomGeometry();
+  updateCustomBuildSummary();
+ });
+ if (customRequestWhatsApp) {
+  customRequestWhatsApp.addEventListener('click', () => {
+   const aroma = data.find(item => item.id === activeKind);
+   const textureLabel = customTextureLabels[selectedCustomTexture] || 'Hand-Rolled';
+   const desiredAroma = (customRequestAroma?.value || '').trim();
+   const notes = (customRequestNotes?.value || '').trim();
+   const messageLines = [
+    'Hello NARA, I would like to discuss a custom incense request.',
+    '',
+    `Selected texture: ${textureLabel}`,
+    `Selected aroma: ${aroma ? aroma.label : 'Sandalwood'}`,
+    `Selected size: ${selectedCustomSize}`,
+    desiredAroma ? `Requested aroma (not listed): ${desiredAroma}` : '',
+    notes ? `Additional notes: ${notes}` : '',
+    '',
+    'Please let me know about availability and development options.'
+   ].filter(line => line !== '');
+   const whatsappUrl = `https://wa.me/6285281394295?text=${encodeURIComponent(messageLines.join('\n'))}`;
+   const link = document.createElement('a');
+   link.href = whatsappUrl;
+   link.target = '_blank';
+   link.rel = 'noopener noreferrer';
+   link.style.display = 'none';
+   document.body.appendChild(link);
+   link.click();
+   link.remove();
+  });
+ }
+}
+
+const thumbMap = {
+ jasmine:'jasmine.webp', rose:'rose.webp', musk:'musk.webp', bali:'bali-signature.webp',
+ pineapple:'pineapple-slices.webp', frangipani:'frangipani.webp', champaca:'champaca.webp',
+ sandalwood:'sandalwood.webp', frankincense:'frankincense.webp', 'honey-frankincense':'honey-frankincense.webp',
+ 'honey-sandalwood':'honey-sandalwood.webp', agarwood:'agarwood.webp', benzoin:'benzoin.webp', 'thousand-flowers':'thousand-flowers.webp',
+ 'sai-flora':'sai-flora.webp', lemongrass:'lemongrass.webp', lavender:'lavender.webp', lotus:'lotus.webp', honey:'honey.webp', bhakti:'bhakti.webp',
+ senthamil:'senthamil.webp', maiden:'maiden.webp', sage:'sage.webp', cinnamon:'cinnamon.webp', tuberose:'tuberose.webp', sakura:'sakura.webp',
+ orchid:'orchid.webp', apple:'apple.webp', orange:'orange.webp', 'green-tea':'green-tea.webp', kraton:'kraton.webp', parijata:'parijata.webp', majumu:'majumu.webp',
+ woody:'sandalwood.webp', botanical:'jasmine.webp', perfume:'musk-resin-wood.webp',
+ fragrance:'rose.webp', materials:'sandalwood.webp', dimensions:'sandalwood.webp', performance:'frankincense.webp',
+ 'floral-blend':'rose.webp','jasmine-option':'jasmine.webp','rose-option':'rose.webp','frangipani-option':'frangipani.webp','champaca-option':'champaca.webp',
+ 'woody-fragrance':'sandalwood.webp','sandalwood-option':'sandalwood.webp','agarwood-option':'musk-resin-wood.webp','aromatic-woods':'sandalwood.webp',
+ 'botanical-blend':'bali-signature.webp','spice-blend':'bali-signature.webp','fresh-fruity':'pineapple-slices.webp','pineapple-option':'pineapple-slices.webp','musk-amber':'musk-resin-wood.webp',
+ 'perfume-inspired':'musk-resin-wood.webp','frankincense-option':'frankincense.webp','honey-resin':'honey-frankincense.webp','natural-resins':'frankincense.webp',
+ 'botanical-materials':'jasmine.webp','ghee-formulation':'honey-frankincense.webp','coconut-core':'sandalwood.webp','wood-binder':'sandalwood.webp',
+ 'organic-essential-oil':'bali-signature.webp','packaging':'sandalwood.webp','private-label':'rose.webp','rd-sampling':'musk-resin-wood.webp'
+};
+for (const item of data) {
+ const button = document.createElement('button');
+ button.type = 'button'; button.className = 'choice'; button.dataset.id = item.id;
+ button.setAttribute('aria-pressed', item.id === config.defaultId ? 'true' : 'false');
+ const imageBox = document.createElement('span'); imageBox.className = 'choice-image';
+ const img = document.createElement('img'); img.src = `./assets/aromas/${thumbMap[item.id] || 'sandalwood.webp'}?v=20261025b`; img.alt = ''; img.loading = 'lazy'; imageBox.append(img);
+ const copy = document.createElement('span'); copy.className = 'choice-copy';
+ const name = document.createElement('span'); name.className = 'choice-name'; name.textContent = item.label;
+ const sub = document.createElement('span'); sub.className = 'choice-sub'; sub.textContent = item.sub;
+ copy.append(name, sub); button.append(imageBox, copy);
+ button.addEventListener('click', () => selectAroma(item.id));
+ choices.append(button); choiceButtons.set(item.id, button);
+}
+
+function getTexture(asset) {
+ if (textureCache.has(asset)) return textureCache.get(asset);
+ const promise = new Promise((resolve, reject) => {
+  textureLoader.load(`./assets/aromas/${asset}.webp?v=20261025b`, texture => {
+   texture.colorSpace = THREE.SRGBColorSpace;
+   texture.anisotropy = Math.min(4, renderer.capabilities.getMaxAnisotropy());
+   resolve(texture);
+  }, undefined, reject);
+ });
+ textureCache.set(asset, promise); return promise;
+}
+function disposeDecor() {
+ for (const item of activeDecor) {
+  aromaGroup.remove(item);
+  if (item.material) item.material.dispose();
+  if (!item.isSprite && item.geometry) item.geometry.dispose();
+ }
+ activeDecor = [];
+}
+function spriteSpec(asset, x, y, z, size, angle=0) { return {asset, x, y, z, size, angle}; }
+const aromaLayouts = {
+ // The plain mode intentionally shows raw ingredient visuals only.
+ plain:[
+  spriteSpec('sandalwood',-.35,.30,-.10,.27,-.12),
+  spriteSpec('frankincense',.34,.23,.10,.25,.12),
+  spriteSpec('musk-resin-wood',-.38,-.13,.06,.29,.15),
+  spriteSpec('honey-frankincense',.33,-.31,-.08,.25,-.12),
+ ],
+ jasmine:[
+  spriteSpec('jasmine',-.36,.25,.06,.30,-.16),spriteSpec('jasmine',.35,.12,-.10,.26,.12),spriteSpec('jasmine',-.31,-.28,.13,.25,.08)
+ ],
+ rose:[
+  spriteSpec('rose',.36,.13,.06,.43,-.06),spriteSpec('rose-petal',-.36,.30,.02,.20,-.22),spriteSpec('rose-petal',.37,-.25,-.08,.16,.26),spriteSpec('rose-petal',-.30,-.30,.13,.17,.16)
+ ],
+ bali:[spriteSpec('frangipani',.36,.17,.03,.35,-.08),spriteSpec('frangipani',-.34,-.22,-.08,.27,.13)],
+ pineapple:[spriteSpec('pineapple-slices',.35,.05,.02,.49,-.05)],
+ frangipani:[spriteSpec('frangipani',-.36,.24,.05,.32,-.13),spriteSpec('frangipani',.35,.12,-.08,.28,.11),spriteSpec('frangipani',-.31,-.28,.10,.25,.10)],
+ champaca:[spriteSpec('champaca',-.35,.26,.04,.32,-.12),spriteSpec('champaca',.36,.06,-.08,.29,.14),spriteSpec('champaca',-.30,-.29,.11,.25,.08)],
+ sandalwood:[spriteSpec('sandalwood',-.36,.22,.04,.31,-.13),spriteSpec('sandalwood',.34,-.17,-.08,.31,.13)],
+ frankincense:[spriteSpec('frankincense',-.36,.22,.04,.31,-.11),spriteSpec('frankincense',.35,-.18,-.08,.28,.14)],
+ 'honey-frankincense':[spriteSpec('honey-frankincense',-.35,.20,.02,.32,-.1),spriteSpec('honey-frankincense',.34,-.20,-.08,.31,.12)],
+ 'honey-sandalwood':[spriteSpec('honey-sandalwood',-.34,.20,.04,.36,-.12),spriteSpec('honey-sandalwood',.34,-.18,-.08,.32,.13)],
+ benzoin:[spriteSpec('benzoin',-.34,.20,.04,.34,-.12),spriteSpec('benzoin',.34,-.18,-.08,.30,.13)],
+ 'thousand-flowers':[spriteSpec('thousand-flowers',-.34,.20,.04,.39,-.12),spriteSpec('thousand-flowers',.34,-.16,-.08,.32,.13)],
+ 'sai-flora':[spriteSpec('sai-flora',-.34,.20,.04,.37,-.12),spriteSpec('sai-flora',.34,-.18,-.08,.31,.13)],
+ lemongrass:[spriteSpec('lemongrass',-.34,.19,.04,.38,-.12),spriteSpec('lemongrass',.34,-.18,-.08,.31,.13)],
+ lavender:[spriteSpec('lavender',-.34,.20,.04,.35,-.12),spriteSpec('lavender',.34,-.18,-.08,.32,.13)],
+ lotus:[spriteSpec('lotus',-.34,.18,.04,.38,-.10),spriteSpec('lotus',.34,-.18,-.08,.32,.12)],
+ honey:[spriteSpec('honey',-.34,.20,.04,.34,-.12),spriteSpec('honey',.34,-.18,-.08,.31,.13)],
+ bhakti:[spriteSpec('bhakti',-.34,.20,.04,.37,-.12),spriteSpec('bhakti',.34,-.18,-.08,.31,.13)],
+ senthamil:[spriteSpec('senthamil',-.34,.20,.04,.37,-.12),spriteSpec('senthamil',.34,-.18,-.08,.31,.13)],
+ maiden:[spriteSpec('maiden',-.34,.20,.04,.37,-.12),spriteSpec('maiden',.34,-.18,-.08,.31,.13)],
+ sage:[spriteSpec('sage',-.34,.20,.04,.36,-.12),spriteSpec('sage',.34,-.18,-.08,.31,.13)],
+ cinnamon:[spriteSpec('cinnamon',-.34,.20,.04,.36,-.12),spriteSpec('cinnamon',.34,-.18,-.08,.31,.13)],
+ tuberose:[spriteSpec('tuberose',-.34,.20,.04,.36,-.12),spriteSpec('tuberose',.34,-.18,-.08,.31,.13)],
+ sakura:[spriteSpec('sakura',-.34,.20,.04,.37,-.12),spriteSpec('sakura',.34,-.18,-.08,.31,.13)],
+ orchid:[spriteSpec('orchid',-.34,.20,.04,.37,-.12),spriteSpec('orchid',.34,-.18,-.08,.31,.13)],
+ apple:[spriteSpec('apple',-.34,.20,.04,.35,-.12),spriteSpec('apple',.34,-.18,-.08,.30,.13)],
+ orange:[spriteSpec('orange',-.34,.20,.04,.36,-.12),spriteSpec('orange',.34,-.18,-.08,.31,.13)],
+ 'green-tea':[spriteSpec('green-tea',-.34,.20,.04,.37,-.12),spriteSpec('green-tea',.34,-.18,-.08,.31,.13)],
+ kraton:[spriteSpec('kraton',-.34,.20,.04,.36,-.12),spriteSpec('kraton',.34,-.18,-.08,.31,.13)],
+ parijata:[spriteSpec('parijata',-.34,.20,.04,.37,-.12),spriteSpec('parijata',.34,-.18,-.08,.31,.13)],
+ majumu:[spriteSpec('majumu',-.34,.20,.04,.37,-.12),spriteSpec('majumu',.34,-.18,-.08,.31,.13)],
+ // Traditional dip fragrance directions — visuals suggest a scent family, not a fixed formula.
+ woody:[spriteSpec('sandalwood',-.36,.22,.04,.34,-.13),spriteSpec('sandalwood',.35,-.18,-.08,.32,.13)],
+ botanical:[spriteSpec('jasmine',-.36,.22,.05,.32,-.13),spriteSpec('frangipani',.35,-.14,-.08,.30,.12),spriteSpec('frangipani',-.30,-.29,.11,.24,.08)],
+ perfume:[spriteSpec('musk-resin-wood',-.35,.20,.04,.34,-.1),spriteSpec('honey-frankincense',.35,-.18,-.08,.30,.12)],
+ // Herbal ingredient directions.
+ agarwood:[spriteSpec('agarwood',-.34,.20,.04,.36,-.12),spriteSpec('agarwood',.34,-.18,-.08,.33,.12)],
+ // Custom development views reflect the selected brief component.
+ fragrance:[spriteSpec('rose',.36,.13,.06,.37,-.06),spriteSpec('rose-petal',-.36,.29,.02,.19,-.22),spriteSpec('jasmine',-.31,-.28,.13,.25,.08)],
+ materials:[spriteSpec('sandalwood',-.36,.22,.04,.31,-.13),spriteSpec('frankincense',.34,-.17,-.08,.31,.13)],
+ dimensions:[spriteSpec('sandalwood',-.36,.22,.04,.26,-.13),spriteSpec('sandalwood',.34,-.17,-.08,.26,.13)],
+ performance:[spriteSpec('frankincense',-.36,.22,.04,.31,-.11),spriteSpec('honey-frankincense',.35,-.18,-.08,.28,.14)],
+ // Custom development options: visuals are mood-board references only; actual material inclusion depends on formulation.
+ 'floral-blend':[spriteSpec('rose',.32,.20,.05,.40,-.06),spriteSpec('jasmine',-.34,.12,.02,.31,.12),spriteSpec('frangipani',-.28,-.28,.11,.27,.08)],
+ 'jasmine-option':[spriteSpec('jasmine',-.33,.22,.05,.34,-.12),spriteSpec('jasmine',.34,.10,-.06,.30,.13),spriteSpec('jasmine',-.28,-.25,.1,.27,.08)],
+ 'rose-option':[spriteSpec('rose',.34,.14,.05,.43,-.06),spriteSpec('rose-petal',-.35,.3,.02,.20,-.22),spriteSpec('rose-petal',.30,-.28,.09,.18,.16)],
+ 'frangipani-option':[spriteSpec('frangipani',-.33,.22,.05,.34,-.13),spriteSpec('frangipani',.34,.08,-.08,.31,.12),spriteSpec('frangipani',-.28,-.27,.11,.26,.08)],
+ 'champaca-option':[spriteSpec('champaca',-.34,.23,.04,.34,-.12),spriteSpec('champaca',.34,.08,-.08,.30,.14),spriteSpec('champaca',-.27,-.27,.1,.25,.08)],
+ 'woody-fragrance':[spriteSpec('sandalwood',-.35,.22,.04,.32,-.12),spriteSpec('musk-resin-wood',.34,.06,-.08,.30,.14),spriteSpec('sandalwood',-.30,-.26,.1,.26,.08)],
+ 'sandalwood-option':[spriteSpec('sandalwood',-.35,.20,.04,.34,-.13),spriteSpec('sandalwood',.34,-.17,-.08,.32,.13)],
+ 'agarwood-option':[spriteSpec('musk-resin-wood',-.34,.20,.04,.34,-.12),spriteSpec('musk-resin-wood',.34,-.17,-.08,.31,.12)],
+ 'aromatic-woods':[spriteSpec('sandalwood',-.35,.22,.04,.32,-.13),spriteSpec('musk-resin-wood',.34,-.17,-.08,.30,.13)],
+ 'botanical-blend':[spriteSpec('bali-signature',-.33,.22,.05,.35,-.13),spriteSpec('jasmine',.34,.08,-.08,.29,.12)],
+ 'spice-blend':[spriteSpec('bali-signature',-.34,.2,.04,.34,-.12),spriteSpec('sandalwood',.34,-.16,-.08,.28,.13)],
+ 'fresh-fruity':[spriteSpec('pineapple-slices',.34,.08,.02,.40,-.04),spriteSpec('bali-signature',-.33,-.22,-.05,.30,.12)],
+ 'pineapple-option':[spriteSpec('pineapple-slices',.34,.03,.02,.49,-.04)],
+ 'musk-amber':[spriteSpec('musk-resin-wood',-.34,.20,.04,.34,-.12),spriteSpec('honey-frankincense',.34,-.17,-.08,.29,.13)],
+ 'perfume-inspired':[spriteSpec('musk-resin-wood',-.34,.20,.04,.34,-.12),spriteSpec('honey-frankincense',.34,-.17,-.08,.29,.13)],
+ 'frankincense-option':[spriteSpec('frankincense',-.34,.21,.04,.33,-.12),spriteSpec('frankincense',.34,-.16,-.08,.30,.13)],
+ 'honey-resin':[spriteSpec('honey-frankincense',-.34,.19,.04,.33,-.12),spriteSpec('frankincense',.34,-.17,-.08,.29,.13)],
+ 'natural-resins':[spriteSpec('frankincense',-.35,.20,.04,.32,-.12),spriteSpec('honey-frankincense',.34,-.17,-.08,.29,.13)],
+ 'botanical-materials':[spriteSpec('jasmine',-.34,.2,.04,.32,-.12),spriteSpec('frangipani',.34,-.14,-.08,.29,.13)],
+ 'ghee-formulation':[spriteSpec('honey-frankincense',-.34,.18,.04,.31,-.12),spriteSpec('musk-resin-wood',.34,-.17,-.08,.29,.13)],
+ 'coconut-core':[spriteSpec('sandalwood',-.34,.20,.04,.32,-.12),spriteSpec('musk-resin-wood',.34,-.17,-.08,.30,.13)],
+ 'wood-binder':[spriteSpec('sandalwood',-.34,.20,.04,.32,-.12),spriteSpec('sandalwood',.34,-.17,-.08,.30,.13)],
+ 'organic-essential-oil':[spriteSpec('bali-signature',-.34,.20,.04,.32,-.12),spriteSpec('honey-frankincense',.34,-.17,-.08,.30,.13)],
+ packaging:[spriteSpec('sandalwood',-.35,.22,.04,.31,-.13),spriteSpec('musk-resin-wood',.34,-.17,-.08,.29,.13)],
+ 'private-label':[spriteSpec('rose',-.34,.19,.04,.31,-.12),spriteSpec('bali-signature',.34,-.16,-.08,.29,.13)],
+ 'rd-sampling':[spriteSpec('sandalwood',-.35,.22,.04,.30,-.13),spriteSpec('frankincense',.34,-.17,-.08,.29,.13)]
+};
+function addMuskAura() {
+ const positions=[[-.35,.28,.03,.072],[.38,.20,-.06,.055],[-.32,-.18,.11,.06],[.35,-.31,-.04,.082]];
+ positions.forEach(([x,y,z,r],i)=>{
+  const geo=new THREE.SphereGeometry(r,12,10);
+  const mat=new THREE.MeshPhysicalMaterial({color:i%2?'#c8b18b':'#f0dfc1',roughness:.34,metalness:0,clearcoat:.2,transparent:true,opacity:.68,emissive:'#5e4326',emissiveIntensity:.07,depthWrite:false});
+  const sphere=new THREE.Mesh(geo,mat); sphere.position.set(x,y,z);
+  sphere.userData={baseX:x,baseY:y,baseZ:z,phase:i*1.4,speed:.45+i*.07,amp:.025};
+  aromaGroup.add(sphere); activeDecor.push(sphere);
+ });
+}
+async function addAroma(id, token) {
+ disposeDecor();
+ if (id === 'musk' || id === 'musk-amber') { addMuskAura(); return; }
+ const layout=aromaLayouts[id] || [];
+ try {
+  const loaded=await Promise.all(layout.map(s=>getTexture(s.asset)));
+  if (token!==selectionToken || activeKind!==id) return;
+  layout.forEach((s,i)=>{
+   const texture=loaded[i];
+   const aspect=texture.image.width/texture.image.height;
+   const mat=new THREE.SpriteMaterial({map:texture,color:0xffffff,transparent:true,opacity:1,depthTest:true,depthWrite:false,alphaTest:.045,toneMapped:false});
+   const sprite=new THREE.Sprite(mat);
+   if(aspect>=1) sprite.scale.set(s.size,s.size/aspect,1); else sprite.scale.set(s.size*aspect,s.size,1);
+   sprite.position.set(s.x,s.y,s.z); sprite.material.rotation=s.angle;
+   sprite.userData={baseX:s.x,baseY:s.y,baseZ:s.z,baseRot:s.angle,baseScaleX:sprite.scale.x,baseScaleY:sprite.scale.y,phase:i*1.7+.4,ampX:.012+(i%2)*.006,ampY:.018+(i%3)*.006,ampZ:.015+(i%2)*.012,speed:.42+(i%3)*.10};
+   aromaGroup.add(sprite); activeDecor.push(sprite);
+  });
+  statusEl.style.display='none';
+ } catch(err) {
+  statusEl.textContent='Ada aset aroma yang belum termuat. Pastikan folder assets/aromas ikut diunggah.';
+  statusEl.style.display='block'; console.error('Aroma texture load error:',err);
+ }
+}
+
+// Slim, low-poly golden spiral adds motion depth without a heavy post-processing effect.
+function addLightTrail(radius, phase, opacity) {
+ const points=[]; const steps=100;
+ for(let i=0;i<=steps;i++){
+  const t=i/steps; const angle=t*Math.PI*3.1+phase;
+  points.push(new THREE.Vector3(Math.cos(angle)*radius+0.12, (t-.5)*1.20, Math.sin(angle)*radius-.10));
+ }
+ const curve=new THREE.CatmullRomCurve3(points);
+ const geo=new THREE.TubeGeometry(curve,steps,.0024,3,false);
+ const mat=new THREE.MeshBasicMaterial({color:'#c49a55',transparent:true,opacity,depthWrite:false});
+ const line=new THREE.Mesh(geo,mat); scene.add(line); return line;
+}
+const trails=[addLightTrail(.24,0,.16),addLightTrail(.31,1.6,.08)];
+const sparkleCount=26; const sparklePositions=new Float32Array(sparkleCount*3); const sparkleMotion=[];
+for(let i=0;i<sparkleCount;i++){
+ sparklePositions[i*3]=(Math.random()-.5)*.95+.12;
+ sparklePositions[i*3+1]=(Math.random()-.5)*1.35;
+ sparklePositions[i*3+2]=(Math.random()-.5)*.28;
+ sparkleMotion.push({phase:Math.random()*6.28,speed:.22+Math.random()*.45,baseY:sparklePositions[i*3+1],baseX:sparklePositions[i*3]});
+}
+const particleGeo=new THREE.BufferGeometry(); particleGeo.setAttribute('position',new THREE.BufferAttribute(sparklePositions,3));
+const particleMat=new THREE.PointsMaterial({color:'#d8ad64',size:.0085,transparent:true,opacity:.48,sizeAttenuation:true,depthWrite:false});
+const sparkles=new THREE.Points(particleGeo,particleMat);scene.add(sparkles);
+
+function makeRodMaterial(color, roughness=.76, clearcoat=.04) {
+ return new THREE.MeshPhysicalMaterial({color, roughness, metalness:0, clearcoat, clearcoatRoughness:.82, side:THREE.DoubleSide});
+}
+function addCylinderStick({x=0,yBase=-.82,z=0,height=1.64,rTop=.018,rBottom=.018,color='#875335',roughness=.78,clearcoat=.04,rotationZ=0,segments=14,material=null}) {
+ const geo=new THREE.CylinderGeometry(rTop,rBottom,height,segments,4,false);
+ geo.computeVertexNormals();
+ const mesh=new THREE.Mesh(geo,material||makeRodMaterial(color,roughness,clearcoat));
+ mesh.position.set(x,yBase+height/2,z); mesh.rotation.z=rotationZ; mesh.castShadow=false; mesh.receiveShadow=false;
+ incenseGroup.add(mesh); return mesh;
+}
+function addHerbalTextureLines(x, height, radius) {
+ // Fine low-contrast grain lines suggest a natural ingredient-blended body, without adding heavy textures.
+ for(let i=0;i<5;i++){
+  const a=(i/5)*Math.PI*2;
+  const points=[];
+  for(let j=0;j<=8;j++){
+   const t=j/8; const y=-.82+t*height;
+   const r=radius*(.98+.02*Math.sin(t*15+i));
+   points.push(new THREE.Vector3(x+Math.cos(a)*r,y,Math.sin(a)*r));
+  }
+  const curve=new THREE.CatmullRomCurve3(points);
+  const geo=new THREE.TubeGeometry(curve,16,.0008,3,false);
+  const mat=new THREE.MeshBasicMaterial({color:i%2?'#b17a50':'#6b432e',transparent:true,opacity:.48,depthWrite:false});
+  const line=new THREE.Mesh(geo,mat); incenseGroup.add(line);
+ }
+}
+function buildTraditionalDip() {
+ // Fragrance-dipped coating over a fine central core; several sticks make this format visually distinct.
+ const positions=[{x:-.092,h:1.28,tilt:-.055,color:'#8d492e'},{x:0,h:1.44,tilt:0,color:'#995334'},{x:.092,h:1.32,tilt:.055,color:'#844329'}];
+ positions.forEach((p,i)=>{
+  const base=-.82; const coreHeight=p.h+.23;
+  addCylinderStick({x:p.x,yBase:base,z:-.015+i*.006,height:coreHeight,rTop:.008,rBottom:.008,color:'#c08b54',roughness:.72,clearcoat:.015,rotationZ:p.tilt,segments:10});
+  addCylinderStick({x:p.x,yBase:base+.22,z:.003+i*.006,height:p.h,rTop:.019,rBottom:.014,color:p.color,roughness:.43,clearcoat:.18,rotationZ:p.tilt,segments:16});
+ });
+}
+function buildHerbalStick() {
+ // One ingredient-blended body: matte, gently irregular and without the dipped coating / exposed core look.
+ const mat=makeRodMaterial('#9b653f',.9,.012);
+ addCylinderStick({x:0,yBase:-.82,z:0,height:1.64,rTop:.018,rBottom:.022,color:'#9b653f',roughness:.9,clearcoat:.012,segments:18,material:mat});
+ addHerbalTextureLines(0,1.64,.020);
+}
+function buildCustomSamples() {
+ // Three draft samples communicate that length, diameter and shape can be developed to a buyer brief.
+ addCylinderStick({x:-.085,yBase:-.82,z:-.025,height:1.42,rTop:.016,rBottom:.022,color:'#815033',roughness:.78,clearcoat:.035,rotationZ:-.085,segments:14});
+ addCylinderStick({x:0,yBase:-.82,z:.02,height:1.64,rTop:.018,rBottom:.018,color:'#a36a42',roughness:.68,clearcoat:.06,rotationZ:0,segments:14});
+ addCylinderStick({x:.086,yBase:-.82,z:-.015,height:1.28,rTop:.023,rBottom:.023,color:'#6f4931',roughness:.74,clearcoat:.045,rotationZ:.09,segments:14});
+}
+// Keep the same recognizable incense silhouette across all product pages.
+// The product profile changes only the warm-brown finish and surface roughness.
+const stickFinish = {
+ 'hand-rolled': {body:'#8c492d', roughness:.64, clearcoat:.065, wood:'#b77942'},
+ 'traditional': {body:'#965b3b', roughness:.53, clearcoat:.095, wood:'#bd8750'},
+ 'herbal': {body:'#89583a', roughness:.82, clearcoat:.018, wood:'#b17a49'},
+ 'custom': {body:'#8f5031', roughness:.68, clearcoat:.05, wood:'#b77c47'}
+}[profile] || {body:'#8c492d',roughness:.64,clearcoat:.065,wood:'#b77942'};
+function incenseTextureKey(id){
+ if(profile==='custom') return selectedCustomTexture;
+ if(profile==='traditional') return 'incense-traditional';
+ if(profile==='herbal') return id==='frankincense'?'incense-herbal-frankincense':'incense-herbal-sandalwood';
+ if(profile==='hand-rolled') return 'incense-hand-rolled';
+ return 'incense-hand-rolled';
+}
+function getStickTexture(key){
+ if(stickTextureCache.has(key)) return stickTextureCache.get(key);
+ const promise=new Promise((resolve,reject)=>{
+  textureLoader.load(`./assets/textures/${key}.webp?v=20261025b`,texture=>{
+   texture.colorSpace=THREE.SRGBColorSpace;
+   texture.wrapS=THREE.RepeatWrapping; texture.wrapT=THREE.ClampToEdgeWrapping;
+   texture.flipY=true;
+   texture.anisotropy=Math.min(8,renderer.capabilities.getMaxAnisotropy());
+   texture.generateMipmaps=true; texture.minFilter=THREE.LinearMipmapLinearFilter; texture.magFilter=THREE.LinearFilter;
+   resolve(texture);
+  },undefined,reject);
+ });
+ stickTextureCache.set(key,promise); return promise;
+}
+function applyIncenseTexture(id){
+ const key=incenseTextureKey(id);
+ if(key===activeStickTextureKey && incenseBodyMeshes.length && incenseBodyMeshes.every(mesh=>mesh.material?.map)) return;
+ activeStickTextureKey=key;
+ const request=++stickTextureRequest;
+ getStickTexture(key).then(texture=>{
+  if(request!==stickTextureRequest || activeStickTextureKey!==key) return;
+  incenseBodyMeshes.forEach(mesh=>{
+   if(!mesh.material) return;
+   mesh.material.map=texture;
+   mesh.material.bumpMap=null;
+   mesh.material.bumpScale=0;
+   mesh.material.roughness=Math.max(mesh.material.roughness || 0, .82);
+   mesh.material.clearcoat=.018;
+   mesh.material.color.set('#ffffff'); mesh.material.needsUpdate=true;
+  });
+ }).catch(err=>console.warn('Unable to load incense material texture:',key,err));
+}
+
+function applyCustomGeometry(){
+ if(profile!=='custom' || !incenseModel) return;
+ const t=(Math.max(16,Math.min(32,selectedCustomSize))-16)/16;
+ // The size value changes both rod thickness and overall length while retaining a slender incense silhouette.
+ const diameterScale=.76 + .48*t;
+ const lengthScale=.92 + .16*t;
+ incenseModel.scale.set(3.58*diameterScale,3.58*lengthScale,3.58*diameterScale);
+ incenseModel.position.y=-.521*lengthScale;
+}
+function updateCustomBuildSummary(){
+ if(profile!=='custom' || !customBuildSummary) return;
+ const aroma=data.find(item=>item.id===activeKind);
+ const textureLabel=customTextureLabels[selectedCustomTexture] || 'Hand-Rolled';
+ customBuildSummary.textContent=`${textureLabel} · ${aroma ? aroma.label : 'Sandalwood'} · Size ${selectedCustomSize}`;
+}
+
+loader.load('./nara-incense-stick.glb', gltf=>{
+ const model=gltf.scene;
+ incenseModel=model;
+ model.scale.setScalar(3.58); model.position.y=-.521;
+ model.traverse(obj=>{
+  if(!obj.isMesh) return;
+  obj.castShadow=false; obj.receiveShadow=false;
+  if(obj.geometry?.attributes?.color) obj.geometry.deleteAttribute('color');
+  obj.geometry.computeVertexNormals();
+  // The supplied GLB has no UVs, so unwrap cylinder-like meshes along the vertical axis.
+  // U follows the angle around the rod; V follows its length from base to tip.
+  if(obj.geometry?.attributes?.position && !obj.geometry.attributes.uv){
+   const position=obj.geometry.attributes.position;
+   let minY=Infinity,maxY=-Infinity;
+   for(let i=0;i<position.count;i++){const y=position.getY(i);minY=Math.min(minY,y);maxY=Math.max(maxY,y);}
+   const span=Math.max(1e-6,maxY-minY),uv=new Float32Array(position.count*2);
+   for(let i=0;i<position.count;i++){
+    const angle=Math.atan2(position.getZ(i),position.getX(i));
+    uv[i*2]=(angle/(Math.PI*2)+1)%1;
+    uv[i*2+1]=(position.getY(i)-minY)/span;
+   }
+   obj.geometry.setAttribute('uv',new THREE.BufferAttribute(uv,2));
+  }
+  const name=(obj.material?.name||'').toLowerCase();
+  const isWood=name.includes('wood')||name.includes('exposed');
+  const isTransition=name.includes('transition');
+  obj.material=new THREE.MeshPhysicalMaterial({
+   color:isWood?stickFinish.wood:stickFinish.body,
+   roughness:isWood?.76:stickFinish.roughness,
+   metalness:0, clearcoat:isWood?.025:stickFinish.clearcoat,
+   clearcoatRoughness:isWood?.88:.78,
+   emissive:isWood?'#211209':'#1c0c06', emissiveIntensity:.018,
+   side:THREE.DoubleSide, vertexColors:false
+  });
+  if(!isWood && !isTransition && obj.geometry?.attributes?.uv) incenseBodyMeshes.push(obj);
+ });
+ incenseGroup.add(model); statusEl.style.display='none';
+ if(profile==='custom') applyCustomGeometry();
+ applyIncenseTexture(activeKind || config.defaultId);
+},undefined,err=>{
+ statusEl.textContent='Model 3D tidak dapat dimuat. Pastikan nara-incense-stick.glb berada satu folder dengan demo.html.';
+ statusEl.style.display='block'; console.error(err);
+});
+
+function selectAroma(id){
+ const item=data.find(x=>x.id===id)||data[0];
+ activeKind=item.id;const token=++selectionToken;
+ if(profile==='custom' && customAromaSelect && customAromaSelect.value!==item.id) customAromaSelect.value=item.id;
+ applyIncenseTexture(id);
+ for(const [key,button] of choiceButtons) button.setAttribute('aria-pressed',key===id?'true':'false');
+ eyebrow.textContent=item.eyebrow;
+ heroTitle.textContent=item.title;
+ heroCategory.textContent=(item.category==='materials'&&profile==='hand-rolled')?'PURE INCENSE':item.sub.toUpperCase();
+ heroDescription.textContent=item.description;
+ heroSummary.innerHTML=item.summary;
+ stageStamp.textContent=profile==='traditional'?`${item.label} · Fragrance Direction`:profile==='herbal'?`${item.label} · Ingredient Direction`:profile==='custom'?`${item.label} · Development Brief`:`${item.label} · ${item.sub}`;
+ addAroma(item.id,token);
+ updateCustomBuildSummary();
+}
+function resize(){
+ const rect=canvas.getBoundingClientRect();
+ const w=Math.max(1,Math.floor(rect.width)),h=Math.max(1,Math.floor(rect.height));
+ renderer.setSize(w,h,false);camera.aspect=w/h;camera.updateProjectionMatrix();
+}
+new ResizeObserver(resize).observe(canvas);resize();
+const clock=new THREE.Clock();
+function animate(){
+ requestAnimationFrame(animate);
+ const t=clock.getElapsedTime();
+ for(const obj of activeDecor){
+  const d=obj.userData;
+  if(obj.isSprite){
+   const w=t*d.speed+d.phase;
+   obj.position.x=d.baseX+Math.sin(w*.67)*d.ampX;
+   obj.position.y=d.baseY+Math.sin(w)*d.ampY;
+   obj.position.z=d.baseZ+Math.cos(w*.62)*d.ampZ;
+   obj.material.rotation=d.baseRot+Math.sin(w*.78)*.055;
+   const breathe=1+Math.sin(w*.9)*.018;obj.scale.set(d.baseScaleX*breathe,d.baseScaleY*breathe,1);
+  }else{
+   const w=t*d.speed+d.phase;obj.position.x=d.baseX+Math.sin(w)*d.amp;obj.position.y=d.baseY+Math.cos(w*.8)*d.amp*1.4;obj.position.z=d.baseZ+Math.sin(w*.6)*d.amp;
+  }
+ }
+ const pos=particleGeo.attributes.position.array;
+ for(let i=0;i<sparkleCount;i++){
+  const d=sparkleMotion[i];pos[i*3]=d.baseX+Math.sin(t*d.speed+d.phase)*.025;pos[i*3+1]=d.baseY+Math.sin(t*.32+d.phase)*.018;pos[i*3+2]=((pos[i*3+2]+.001)%0.32)-.16;
+ }
+ particleGeo.attributes.position.needsUpdate=true;
+ controls.update();renderer.render(scene,camera);
+}
+animate();
+selectAroma(config.defaultId);
