@@ -1,0 +1,521 @@
+/* NARA Journal — Incense differences article and featured listing story */
+body.incense-differences-page {
+  --difference-ink: #35291f;
+  --difference-body: #62584d;
+  --difference-muted: #8b7964;
+  --difference-accent: #b78d59;
+  --difference-paper: #fbf8f1;
+  background: var(--difference-paper);
+  color: var(--difference-ink);
+  font-family: "DM Sans", Arial, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+body.incense-differences-page .differences-hero {
+  padding: clamp(44px, 6.8vw, 86px) 0 clamp(28px, 4vw, 48px);
+  background: radial-gradient(ellipse at 86% 8%, rgba(190, 157, 113, .17), transparent 32%), #f5f0e7;
+  border-bottom: 1px solid rgba(71, 55, 38, .08);
+}
+body.incense-differences-page .differences-hero-inner { max-width: 980px; }
+body.incense-differences-page .article-back {
+  display: inline-flex; align-items: center; gap: 8px; margin-bottom: clamp(25px, 3.5vw, 40px);
+  color: #75624f; font-size: 10px; font-weight: 700; letter-spacing: .15em; text-decoration: none;
+  transition: color .2s ease, transform .2s ease;
+}
+body.incense-differences-page .article-back:hover { color: #3e5b43; transform: translateX(-3px); }
+body.incense-differences-page .differences-hero .section-label,
+body.incense-differences-page .differences-kicker {
+  margin: 0 0 13px; color: #947046; font-size: 10px; font-weight: 700; letter-spacing: .19em; line-height: 1.6;
+}
+body.incense-differences-page .differences-hero .section-label span { padding: 0 7px; color: #c3aa87; }
+body.incense-differences-page .differences-hero h1 {
+  max-width: 920px; margin: 0; color: #30241b; font-family: "DM Serif Display", Georgia, serif;
+  font-size: clamp(42px, 6vw, 76px); font-weight: 400; letter-spacing: -.034em; line-height: 1.035; text-wrap: balance;
+}
+body.incense-differences-page .differences-hero h1 em { color: #92724d; font-weight: 400; }
+body.incense-differences-page .differences-intro {
+  max-width: 720px; margin: clamp(20px, 2.3vw, 27px) 0 0; color: #6b5b4c; font-size: clamp(16px, 1.55vw, 19px); line-height: 1.85;
+}
+body.incense-differences-page .differences-meta { display: flex; align-items: center; gap: 12px; margin-top: 24px; color: #92744f; font-size: 9px; font-weight: 700; letter-spacing: .16em; }
+body.incense-differences-page .differences-cover-wrap { padding: 0 0 clamp(32px, 5vw, 56px); background: #f5f0e7; }
+body.incense-differences-page .differences-cover { overflow: hidden; margin: 0; border: 1px solid rgba(67, 50, 33, .1); border-radius: 7px; background: #ece4d7; box-shadow: 0 18px 52px rgba(48, 36, 24, .08); }
+body.incense-differences-page .differences-cover img { display: block; width: 100%; height: auto; aspect-ratio: 10 / 3; object-fit: cover; }
+body.incense-differences-page .differences-main { padding: 0 0 clamp(68px, 9vw, 118px); background: var(--difference-paper); }
+body.incense-differences-page .differences-layout { display: grid; grid-template-columns: minmax(0, 760px) minmax(230px, 280px); justify-content: center; align-items: start; gap: clamp(38px, 6.2vw, 94px); max-width: 1190px; }
+body.incense-differences-page .differences-content { min-width: 0; color: var(--difference-body); }
+body.incense-differences-page .differences-content p { margin: 0 0 22px; color: var(--difference-body); font-size: 16px; line-height: 1.95; letter-spacing: .002em; }
+body.incense-differences-page .differences-content .article-lead { margin-bottom: 26px; color: #44362a; font-size: clamp(18px, 1.8vw, 21px); line-height: 1.85; }
+body.incense-differences-page .differences-pullquote { margin: 30px 0 30px; padding: 5px 0 5px 24px; border-left: 3px solid var(--difference-accent); color: #51402f; font-family: "DM Serif Display", Georgia, serif; font-size: clamp(22px, 2.3vw, 29px); line-height: 1.5; }
+body.incense-differences-page .differences-content section { scroll-margin-top: 110px; margin-top: clamp(48px, 6vw, 72px); }
+body.incense-differences-page .differences-number { display: flex; align-items: center; gap: 12px; margin: 0 0 10px !important; color: #ab8a60 !important; font-size: 10px !important; font-weight: 700; letter-spacing: .17em; line-height: 1.5 !important; }
+body.incense-differences-page .differences-number span { color: #9a8c7b; font-size: 9px; }
+body.incense-differences-page .differences-content h2 { margin: 0 0 20px; color: #30271f; font-family: "DM Serif Display", Georgia, serif; font-size: clamp(31px, 3.2vw, 41px); font-weight: 400; letter-spacing: -.021em; line-height: 1.13; text-wrap: balance; }
+body.incense-differences-page .differences-content h2::after { display: block; content: ""; width: 46px; height: 2px; margin-top: 17px; background: var(--difference-accent); }
+body.incense-differences-page .fragrance-directions { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; margin: 28px 0 26px; padding: 0; list-style: none; }
+body.incense-differences-page .fragrance-directions li { display: flex; flex-direction: column; gap: 6px; min-height: 112px; padding: 18px 19px; border: 1px solid rgba(63, 49, 34, .09); border-radius: 5px; background: #f6f1e8; }
+body.incense-differences-page .fragrance-directions li:last-child { grid-column: 1 / -1; min-height: 0; }
+body.incense-differences-page .fragrance-directions strong { color: #473627; font-family: "DM Serif Display", Georgia, serif; font-size: 20px; font-weight: 400; }
+body.incense-differences-page .fragrance-directions span { color: #75685a; font-size: 13px; line-height: 1.7; }
+body.incense-differences-page .differences-checklist { display: grid; gap: 0; margin: 22px 0 25px; padding: 0; list-style: none; }
+body.incense-differences-page .differences-checklist li { position: relative; padding: 13px 8px 13px 29px; border-bottom: 1px solid rgba(63, 49, 34, .1); color: #5f5549; font-size: 15px; line-height: 1.7; }
+body.incense-differences-page .differences-checklist li::before { content: "✓"; position: absolute; left: 1px; top: 13px; color: #a67e4c; font-size: 14px; font-weight: 700; }
+body.incense-differences-page .differences-signoff { display: flex; flex-direction: column; align-items: flex-start; gap: 5px; margin-top: 34px; padding: 25px 26px; border: 1px solid rgba(63, 49, 34, .1); border-left: 3px solid var(--difference-accent); border-radius: 0 6px 6px 0; background: #f2ede3; }
+body.incense-differences-page .differences-signoff p { margin: 0 0 2px; color: #493727; font-family: "DM Serif Display", Georgia, serif; font-size: 28px; line-height: 1.2; }
+body.incense-differences-page .differences-signoff span { color: #706151; font-size: 14px; line-height: 1.7; }
+body.incense-differences-page .differences-signoff a { margin-top: 7px; color: #425a43; font-size: 13px; text-underline-offset: 4px; }
+body.incense-differences-page .differences-sidebar { position: sticky; top: 112px; display: grid; gap: 20px; min-width: 0; }
+body.incense-differences-page .differences-toc { padding: 23px 22px 18px; border: 1px solid rgba(63, 49, 34, .1); border-radius: 6px; background: #fffdf8; box-shadow: 0 8px 27px rgba(52, 42, 30, .035); }
+body.incense-differences-page .differences-toc .section-label,
+body.incense-differences-page .differences-contact-card .section-label { margin: 0 0 15px; color: #99764c; font-size: 9px; font-weight: 700; letter-spacing: .17em; }
+body.incense-differences-page .differences-toc a { display: grid; grid-template-columns: 26px minmax(0,1fr); gap: 8px; padding: 11px 0; border-top: 1px solid rgba(63, 49, 34, .08); color: #5e5245; font-size: 12px; line-height: 1.55; text-decoration: none; transition: color .2s ease; }
+body.incense-differences-page .differences-toc a span { color: #ad8a5c; font-size: 10px; font-weight: 700; letter-spacing: .04em; }
+body.incense-differences-page .differences-toc a:hover { color: #344f39; }
+body.incense-differences-page .differences-contact-card { padding: 25px 23px; border-radius: 6px; background: #ede7db; }
+body.incense-differences-page .differences-contact-card h3 { margin: 0 0 12px; color: #372a20; font-family: "DM Serif Display", Georgia, serif; font-size: 27px; font-weight: 400; line-height: 1.13; }
+body.incense-differences-page .differences-contact-card p:not(.section-label) { margin: 0 0 20px; color: #6b5e4f; font-size: 13px; line-height: 1.8; }
+body.incense-differences-page .differences-contact-card .btn { display: inline-flex; justify-content: center; width: 100%; padding: 13px 15px; font-size: 10px; letter-spacing: .08em; text-align: center; }
+body.incense-differences-page .differences-email { display: block; margin-top: 15px; color: #52644a; font-size: 12px; text-align: center; text-decoration: none; overflow-wrap: anywhere; }
+body.incense-differences-page .differences-bottom-cta { padding: clamp(54px, 7vw, 86px) 0; border-top: 1px solid rgba(63, 49, 34, .08); background: #eee8dc; text-align: center; }
+body.incense-differences-page .differences-bottom-cta .container { max-width: 780px; }
+body.incense-differences-page .differences-bottom-cta .section-label { margin: 0 0 13px; color: #967046; font-size: 10px; font-weight: 700; letter-spacing: .18em; }
+body.incense-differences-page .differences-bottom-cta h2 { margin: 0 auto 16px; color: #33271e; font-family: "DM Serif Display", Georgia, serif; font-size: clamp(34px, 4.4vw, 51px); font-weight: 400; line-height: 1.09; letter-spacing: -.025em; text-wrap: balance; }
+body.incense-differences-page .differences-bottom-cta p:not(.section-label) { max-width: 620px; margin: 0 auto 26px; color: #6c5c4c; font-size: 15px; line-height: 1.85; }
+body.incense-differences-page .differences-bottom-cta .btn { display: inline-flex; align-items: center; gap: 12px; padding: 15px 22px; font-size: 10px; letter-spacing: .09em; }
+
+/* Wide featured story on the Blog landing page — preserves the complete supplied cover. */
+body.nara-journal-page .journal-featured-story { overflow: hidden; margin: 0 0 clamp(30px, 4vw, 46px); border: 1px solid rgba(35, 40, 31, .1); border-radius: 8px; background: #fffdf8; box-shadow: 0 12px 35px rgba(35, 34, 26, .055); }
+body.nara-journal-page .journal-featured-image { position: relative; display: block; overflow: hidden; background: #eee6d8; }
+body.nara-journal-page .journal-featured-image img { display: block; width: 100%; height: auto; aspect-ratio: 10 / 3; object-fit: cover; transition: filter .25s ease; }
+body.nara-journal-page .journal-featured-image:hover img { filter: saturate(1.03) contrast(1.015); }
+body.nara-journal-page .journal-featured-badge { position: absolute; top: 17px; right: 17px; padding: 9px 12px; border: 1px solid rgba(85, 60, 36, .13); background: rgba(250, 246, 238, .92); color: #755838; font-size: 9px; font-weight: 700; letter-spacing: .15em; }
+body.nara-journal-page .journal-featured-copy { display: flex; justify-content: space-between; align-items: center; gap: 28px; padding: clamp(24px, 3.4vw, 39px) clamp(24px, 4.5vw, 55px); }
+body.nara-journal-page .journal-featured-copy .blog-category { margin: 0 0 11px; }
+body.nara-journal-page .journal-featured-copy h3 { max-width: 800px; margin: 0 0 10px; color: #30271f; font-family: "DM Serif Display", Georgia, serif; font-size: clamp(28px, 3.4vw, 42px); font-weight: 400; letter-spacing: -.023em; line-height: 1.12; }
+body.nara-journal-page .journal-featured-copy h3 a { color: inherit; text-decoration: none; }
+body.nara-journal-page .journal-featured-copy h3 a:hover { color: #53684d; }
+body.nara-journal-page .journal-featured-copy > div > p:last-child { max-width: 760px; margin: 0; color: #686055; font-size: 14px; line-height: 1.85; }
+body.nara-journal-page .journal-featured-link { display: inline-flex; flex-shrink: 0; align-items: center; gap: 13px; padding-bottom: 7px; border-bottom: 1px solid rgba(65, 84, 59, .38); color: #42583e; font-size: 10px; font-weight: 700; letter-spacing: .12em; text-decoration: none; white-space: nowrap; transition: gap .2s ease; }
+body.nara-journal-page .journal-featured-link:hover { gap: 18px; }
+
+@media (max-width: 950px) {
+  body.incense-differences-page .differences-layout { grid-template-columns: minmax(0, 760px); gap: 36px; }
+  body.incense-differences-page .differences-sidebar { position: static; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); align-items: start; }
+  body.nara-journal-page .journal-featured-copy { align-items: flex-start; flex-direction: column; gap: 20px; }
+}
+@media (max-width: 600px) {
+  body.incense-differences-page .differences-hero { padding: 36px 0 29px; }
+  body.incense-differences-page .article-back { margin-bottom: 24px; font-size: 9px; }
+  body.incense-differences-page .differences-hero h1 { font-size: clamp(39px, 11vw, 51px); line-height: 1.03; }
+  body.incense-differences-page .differences-intro { font-size: 15px; line-height: 1.8; }
+  body.incense-differences-page .differences-meta { flex-wrap: wrap; gap: 8px; font-size: 8px; }
+  body.incense-differences-page .differences-cover-wrap { padding-bottom: 29px; }
+  body.incense-differences-page .differences-cover { border-radius: 4px; }
+  body.incense-differences-page .differences-cover img { aspect-ratio: 10 / 3; }
+  body.incense-differences-page .differences-content p { margin-bottom: 18px; font-size: 15.5px; line-height: 1.86; }
+  body.incense-differences-page .differences-content .article-lead { font-size: 18px; line-height: 1.78; }
+  body.incense-differences-page .differences-pullquote { margin: 24px 0; padding-left: 17px; font-size: 23px; line-height: 1.42; }
+  body.incense-differences-page .differences-content section { margin-top: 44px; }
+  body.incense-differences-page .differences-content h2 { font-size: 32px; line-height: 1.1; }
+  body.incense-differences-page .fragrance-directions { grid-template-columns: minmax(0, 1fr); gap: 8px; }
+  body.incense-differences-page .fragrance-directions li,
+  body.incense-differences-page .fragrance-directions li:last-child { grid-column: auto; min-height: 0; padding: 16px 17px; }
+  body.incense-differences-page .differences-checklist li { font-size: 14px; }
+  body.incense-differences-page .differences-signoff { padding: 20px 19px; }
+  body.incense-differences-page .differences-sidebar { grid-template-columns: minmax(0, 1fr); }
+  body.incense-differences-page .differences-toc { padding: 20px 19px 14px; }
+  body.incense-differences-page .differences-contact-card { padding: 22px 20px; }
+  body.incense-differences-page .differences-bottom-cta { padding: 52px 0; }
+  body.incense-differences-page .differences-bottom-cta h2 { font-size: 36px; }
+  body.nara-journal-page .journal-featured-image img { aspect-ratio: 10 / 3; }
+  body.nara-journal-page .journal-featured-badge { top: 8px; right: 8px; padding: 7px 8px; font-size: 8px; }
+  body.nara-journal-page .journal-featured-copy { padding: 22px 20px 24px; }
+  body.nara-journal-page .journal-featured-copy h3 { font-size: 30px; }
+  body.nara-journal-page .journal-featured-copy > div > p:last-child { font-size: 13px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  body.incense-differences-page .article-back,
+  body.nara-journal-page .journal-featured-image img,
+  body.nara-journal-page .journal-featured-link { transition: none !important; }
+}
+
+/* =========================================================
+   NARA ARTICLE — OVERLAP + TABLET / MOBILE REFINEMENT (v2)
+   Keep the navigation in the document flow so it can never
+   cover the Back to Journal control or the article heading.
+========================================================= */
+body.incense-differences-page {
+  overflow-x: clip;
+}
+
+body.incense-differences-page .site-header {
+  position: relative !important;
+  inset: auto !important;
+  z-index: 1000;
+  width: 100%;
+  background: #1e211d;
+}
+
+body.incense-differences-page .differences-hero {
+  padding: clamp(28px, 3.4vw, 42px) 0 clamp(30px, 4vw, 48px);
+}
+
+body.incense-differences-page .differences-hero-inner {
+  width: min(92%, 1180px);
+  max-width: 1180px;
+}
+
+body.incense-differences-page .article-back {
+  position: relative;
+  z-index: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 9px;
+  min-height: 42px;
+  max-width: 100%;
+  box-sizing: border-box;
+  margin: 0 0 clamp(26px, 3vw, 36px);
+  padding: 11px 15px;
+  border: 1px solid rgba(117, 98, 79, .32);
+  border-radius: 4px;
+  background: rgba(255, 253, 248, .66);
+  color: #66513d;
+  font-family: "DM Sans", Arial, sans-serif;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: .12em;
+  line-height: 1.25;
+  text-decoration: none;
+  white-space: nowrap;
+  box-shadow: 0 3px 12px rgba(48, 36, 24, .035);
+  transition: color .2s ease, border-color .2s ease, background .2s ease, transform .2s ease;
+}
+
+body.incense-differences-page .article-back:hover {
+  color: #344f39;
+  border-color: rgba(52, 79, 57, .55);
+  background: #fffdf8;
+  transform: translateX(-2px);
+}
+
+body.incense-differences-page .article-back:focus-visible,
+body.incense-differences-page .differences-toc a:focus-visible,
+body.incense-differences-page a.btn:focus-visible {
+  outline: 3px solid rgba(183, 141, 89, .7);
+  outline-offset: 3px;
+}
+
+body.incense-differences-page .differences-hero h1 {
+  max-width: 1080px;
+  font-size: clamp(40px, 5.3vw, 74px);
+  line-height: 1.045;
+  overflow-wrap: break-word;
+}
+
+body.incense-differences-page .differences-intro {
+  max-width: 760px;
+  line-height: 1.8;
+}
+
+body.incense-differences-page .differences-cover-wrap > .container,
+body.incense-differences-page .differences-main > .container {
+  width: min(92%, 1190px);
+}
+
+body.incense-differences-page .differences-cover img {
+  max-width: 100%;
+  height: auto;
+}
+
+body.incense-differences-page .differences-layout {
+  width: 100%;
+  box-sizing: border-box;
+  grid-template-columns: minmax(0, 760px) minmax(220px, 280px);
+  gap: clamp(28px, 4.4vw, 66px);
+}
+
+body.incense-differences-page .differences-content,
+body.incense-differences-page .differences-sidebar,
+body.incense-differences-page .differences-contact-card,
+body.incense-differences-page .differences-toc {
+  min-width: 0;
+}
+
+body.incense-differences-page .differences-content img,
+body.incense-differences-page .differences-sidebar img {
+  max-width: 100%;
+  height: auto;
+}
+
+/* Switch to a single article column before tablet widths become cramped. */
+@media (max-width: 1100px) {
+  body.incense-differences-page .differences-layout {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 36px;
+    max-width: 820px;
+  }
+
+  body.incense-differences-page .differences-sidebar {
+    position: static;
+    top: auto;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    align-items: start;
+    gap: 16px;
+  }
+
+  body.incense-differences-page .differences-toc,
+  body.incense-differences-page .differences-contact-card {
+    height: 100%;
+    box-sizing: border-box;
+  }
+
+  body.incense-differences-page .differences-hero h1 {
+    max-width: 950px;
+    font-size: clamp(40px, 5.8vw, 64px);
+  }
+}
+
+@media (max-width: 800px) {
+  body.incense-differences-page .differences-hero {
+    padding: 28px 0 34px;
+  }
+
+  body.incense-differences-page .differences-hero-inner,
+  body.incense-differences-page .differences-cover-wrap > .container,
+  body.incense-differences-page .differences-main > .container,
+  body.incense-differences-page .differences-bottom-cta > .container {
+    width: min(90%, 680px);
+  }
+
+  body.incense-differences-page .article-back {
+    margin-bottom: 27px;
+  }
+
+  body.incense-differences-page .differences-hero h1 {
+    font-size: clamp(38px, 6.2vw, 52px);
+    line-height: 1.08;
+    letter-spacing: -.027em;
+  }
+
+  body.incense-differences-page .differences-intro {
+    margin-top: 20px;
+    font-size: 16px;
+    line-height: 1.8;
+  }
+
+  body.incense-differences-page .differences-meta {
+    flex-wrap: wrap;
+    row-gap: 8px;
+    line-height: 1.6;
+  }
+
+  body.incense-differences-page .differences-cover-wrap {
+    padding-bottom: 34px;
+  }
+
+  body.incense-differences-page .differences-cover {
+    border-radius: 6px;
+  }
+
+  body.incense-differences-page .differences-main {
+    padding-bottom: 72px;
+  }
+
+  body.incense-differences-page .differences-sidebar {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  body.incense-differences-page .differences-toc,
+  body.incense-differences-page .differences-contact-card {
+    height: auto;
+  }
+
+  body.incense-differences-page .differences-sidebar .differences-toc a {
+    min-height: 42px;
+    align-items: center;
+    font-size: 13px;
+  }
+
+  body.incense-differences-page .differences-content section {
+    scroll-margin-top: 28px;
+  }
+}
+
+@media (max-width: 600px) {
+  body.incense-differences-page .differences-hero {
+    padding: 23px 0 28px;
+  }
+
+  body.incense-differences-page .differences-hero-inner,
+  body.incense-differences-page .differences-cover-wrap > .container,
+  body.incense-differences-page .differences-main > .container,
+  body.incense-differences-page .differences-bottom-cta > .container {
+    width: calc(100% - 36px);
+    max-width: 520px;
+  }
+
+  body.incense-differences-page .article-back {
+    min-height: 42px;
+    margin-bottom: 24px;
+    padding: 10px 12px;
+    font-size: 9px;
+    letter-spacing: .09em;
+  }
+
+  body.incense-differences-page .differences-hero .section-label,
+  body.incense-differences-page .differences-kicker {
+    font-size: 9px;
+    letter-spacing: .14em;
+  }
+
+  body.incense-differences-page .differences-hero h1 {
+    font-size: clamp(35px, 9.5vw, 46px);
+    line-height: 1.06;
+    letter-spacing: -.03em;
+    text-wrap: pretty;
+  }
+
+  body.incense-differences-page .differences-intro {
+    margin-top: 17px;
+    font-size: 15px;
+    line-height: 1.78;
+  }
+
+  body.incense-differences-page .differences-meta {
+    margin-top: 18px;
+    font-size: 8px;
+    letter-spacing: .11em;
+  }
+
+  body.incense-differences-page .differences-cover-wrap {
+    padding-bottom: 26px;
+  }
+
+  body.incense-differences-page .differences-cover img {
+    display: block;
+    width: 100%;
+    height: auto;
+    aspect-ratio: auto;
+    object-fit: contain;
+  }
+
+  body.incense-differences-page .differences-main {
+    padding-bottom: 58px;
+  }
+
+  body.incense-differences-page .differences-layout {
+    gap: 34px;
+  }
+
+  body.incense-differences-page .differences-content p {
+    margin-bottom: 17px;
+    font-size: 15px;
+    line-height: 1.82;
+  }
+
+  body.incense-differences-page .differences-content .article-lead {
+    margin-bottom: 21px;
+    font-size: 17px;
+    line-height: 1.76;
+  }
+
+  body.incense-differences-page .differences-pullquote {
+    margin: 24px 0;
+    padding-left: 15px;
+    font-size: 22px;
+    line-height: 1.42;
+  }
+
+  body.incense-differences-page .differences-content section {
+    margin-top: 39px;
+  }
+
+  body.incense-differences-page .differences-content h2 {
+    margin-bottom: 16px;
+    font-size: clamp(28px, 7.8vw, 33px);
+    line-height: 1.13;
+  }
+
+  body.incense-differences-page .fragrance-directions {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 8px;
+    margin: 22px 0;
+  }
+
+  body.incense-differences-page .fragrance-directions li,
+  body.incense-differences-page .fragrance-directions li:last-child {
+    grid-column: auto;
+    min-height: 0;
+    padding: 15px 16px;
+  }
+
+  body.incense-differences-page .fragrance-directions strong {
+    font-size: 19px;
+  }
+
+  body.incense-differences-page .fragrance-directions span {
+    font-size: 13px;
+  }
+
+  body.incense-differences-page .differences-signoff {
+    padding: 19px 17px;
+  }
+
+  body.incense-differences-page .differences-signoff p {
+    font-size: 25px;
+  }
+
+  body.incense-differences-page .differences-sidebar {
+    gap: 14px;
+  }
+
+  body.incense-differences-page .differences-toc {
+    padding: 19px 17px 13px;
+  }
+
+  body.incense-differences-page .differences-contact-card {
+    padding: 21px 18px;
+  }
+
+  body.incense-differences-page .differences-contact-card .btn,
+  body.incense-differences-page .differences-bottom-cta .btn {
+    display: flex;
+    width: 100%;
+    box-sizing: border-box;
+    min-height: 46px;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+  }
+
+  body.incense-differences-page .differences-bottom-cta {
+    padding: 45px 0;
+  }
+
+  body.incense-differences-page .differences-bottom-cta h2 {
+    font-size: clamp(31px, 8.2vw, 37px);
+    line-height: 1.12;
+  }
+
+  body.incense-differences-page .differences-bottom-cta p:not(.section-label) {
+    font-size: 14px;
+    line-height: 1.8;
+  }
+}
+
+@media (max-width: 380px) {
+  body.incense-differences-page .differences-hero-inner,
+  body.incense-differences-page .differences-cover-wrap > .container,
+  body.incense-differences-page .differences-main > .container,
+  body.incense-differences-page .differences-bottom-cta > .container {
+    width: calc(100% - 30px);
+  }
+
+  body.incense-differences-page .differences-hero h1 {
+    font-size: 34px;
+  }
+
+  body.incense-differences-page .differences-meta {
+    font-size: 7px;
+  }
+}
